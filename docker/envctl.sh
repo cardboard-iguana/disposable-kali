@@ -71,17 +71,19 @@ stopEngagement () {
 #
 startCLI () {
 	startEngagement
+	waitForIt
 	docker exec --tty --interactive "$NAME" /usr/bin/bash
 }
 
 startGUI () {
 	startEngagement
+	waitForIt
 	if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
-		FREERDP=wlfrerdp
+		FREERDP=wlfreerdp
 	else
 		FREERDP=xfreerdp
 	fi
-	$FREERDP /u:$USER /v:localhost:3389
+	$FREERDP /bpp:16 /dynamic-resolution /u:$USER /v:localhost:3389
 }
 
 # Archive Docker container and control script in ENGAGEMENT_DIR.
@@ -146,6 +148,18 @@ removeContainerImagePair () {
 	docker rmi --force "$NAME"
 	echo ">>>> Pruning Docker to remove dangling references..."
 	docker image prune --force
+}
+
+# Helper function that sleeps briefly.
+#
+waitForIt () {
+	SECONDS=4
+	echo -n ">>>> Sleeping briefly"
+	for STEP in $(seq 1 $SECONDS); do
+		sleep 1
+		echo -n "."
+	done
+	echo ""
 }
 
 # Flow control.

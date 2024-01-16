@@ -26,7 +26,7 @@ brew install \
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
 - [jq](https://jqlang.github.io/jq/)
-- [wlFreeRDP or XFreeRDP](https://www.freerdp.com/)
+- [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
 - [XZ Utils](https://tukaani.org/xz/)
 
 On [Debian](https://debian.org/):
@@ -43,11 +43,11 @@ apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-co
 
 usermod --append --groups docker $USER
 
-# Install additional tools. Replace `freerdp2-wayland` with
-# `freerdp2-x11` if not using Wayland.
+# Install additional tools. Alternately, replace `freerdp2-x11` with
+# `freerdp2-wayland`.
 #
 apt install \
-    freerdp2-wayland \
+    freerdp2-x11 \
     jq \
     xz-utils
 ```

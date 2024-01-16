@@ -62,6 +62,7 @@ apt install --quiet --assume-yes \
     rlwrap \
     seclists \
     testssl.sh \
+    xclip \
     xdotool \
     xorg \
     xorgxrdp \
@@ -138,8 +139,10 @@ rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
 rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
 rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
-sed -i '/.*power-manager-plugin.*/d' /etc/xdg/xfce4/panel/default.xml
-sed -i '/.*pulseaudio.*/d'           /etc/xdg/xfce4/panel/default.xml
+sed -i 's/cpugraph/cpugraph-disabled/'                         /etc/xdg/xfce4/panel/default.xml
+sed -i 's/power-manager-plugin/power-manager-plugin-disabled/' /etc/xdg/xfce4/panel/default.xml
+sed -i 's/pulseaudio/pulseaudio-disabled/'                     /etc/xdg/xfce4/panel/default.xml
+sed -i 's/\+lock-screen/-lock-screen/'                         /etc/xdg/xfce4/panel/default.xml
 EOF
 
 # Create our normal user
@@ -302,7 +305,11 @@ CONF
 cat > $USER_HOME/.tmux.conf << CONF
 set -g default-terminal "tmux-256color"
 set -g allow-passthrough off
+
 set -g mouse on
+set-option -s set-clipboard off
+bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 CONF
 
 mkdir --parents $USER_HOME/Documents

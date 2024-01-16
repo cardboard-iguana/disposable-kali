@@ -11,6 +11,7 @@ if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
 	fi
 elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
 	echo "Coming soon!"
+	exit
 else
 	echo "No usable install of Docker or PRoot Distro found!"
 	exit 1
@@ -39,8 +40,13 @@ done
 # Determine build variables.
 #
 NAME="$(echo -n "$ENGAGEMENT_NAME" | tr -c -s '[:alnum:]_-' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^[_-]\+//;s/[_-]\+$//')"
-SCRIPT="$HOME/.local/bin/${NAME}.sh"
 ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
+
+if [[ "$CODE_PATH" == "docker" ]]; then
+	SCRIPT="$HOME/.local/bin/${NAME}.sh"
+else
+	SCRIPT="???"
+fi
 
 USER_NAME="$USER"
 TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
@@ -98,32 +104,34 @@ mkdir --parents "$ENGAGEMENT_DIR"
 # practice most of the time a new engagement is only going to be built
 # daily at worse, and more likely only once every 2 - 3 weeks.
 #
-docker pull kalilinux/kali-rolling
+if [[ "$CODE_PATH" == "docker" ]]; then
+	docker pull kalilinux/kali-rolling
 
-export USER_NAME USER_PASS TIMEZONE
+	export USER_NAME USER_PASS TIMEZONE
 
-cat docker/Dockerfile | docker build \
-	--no-cache \
-	--secret id=USER_NAME \
-	--secret id=USER_PASS \
-	--secret id=TIMEZONE \
-	--tag "$NAME" -
+	cat docker/Dockerfile | docker build \
+		--no-cache \
+		--secret id=USER_NAME \
+		--secret id=USER_PASS \
+		--secret id=TIMEZONE \
+		--tag "$NAME" -
 
-docker create --name "$NAME" \
-              --publish 3389:3389 \
-              --tty \
-              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
-                "$NAME"
+	docker create --name "$NAME" \
+	              --publish 3389:3389 \
+	              --tty \
+	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
+	                "$NAME"
 
-unset USER_NAME USER_PASS TIMEZONE
+	unset USER_NAME USER_PASS TIMEZONE
 
-# Create control script.
-#
-sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
-chmod +x "$SCRIPT"
+	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
+else
+	echo "Coming soon!"
+fi
 
 # Finish up.
 #
+chmod +x "$SCRIPT"
 echo ""
 echo "Build finished. The engagement container can be controlled with"
 echo "$SCRIPT."
