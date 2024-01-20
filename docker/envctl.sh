@@ -6,18 +6,24 @@ NAME="{{environment-name}}"
 #
 SCRIPT="$HOME/.local/bin/${NAME}.sh"
 ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-CONTAINER_DATA="$(docker container ls --all --format json | jq --slurp --raw-output ".[] | select(.Names == \"$NAME\") | .ID + \"|\" + .State")"
+ID="$(docker container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
+STATE="$(docker container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
 
 # Sanity check environment.
 #
-if [[ -n "$CONTAINER_DATA" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
-	STATE="$(echo "$CONTAINER_DATA" | cut -d "|" -f 2)"
+if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+	SANITY="100%"
+elif [[ -n "$ID" ]] || [[ -d "$ENGAGEMENT_DIR" ]] || [[ -f "$SCRIPT" ]]; then
+	SANITY="100%"
 else
+	SANITY="0%"
+fi
+if [[ "$SANITY" == "0%" ]]; then
 	echo "The environment for $NAME appears to be damaged or incomplete, and is"
 	echo "not usable."
 	echo ""
-	if [[ -n "$CONTAINER_DATA" ]]; then
-		echo "  Docker Container:     $(echo "$CONTAINER_DATA" | cut -d "|" -f 1)"
+	if [[ -n "$ID" ]]; then
+		echo "  Docker Container:     $NAME ($ID)"
 	else
 		echo "  Docker Container:     DOES NOT EXIST"
 	fi
@@ -49,6 +55,8 @@ scriptHelp () {
 	if [[ "$(uname -s)" == "Linux" ]]; then
 		echo "  desktop  Connect to a desktop in the engagement's container"
 	fi
+	echo "  backup   Commit changes to the underlying image and back it up"
+	echo "  restore  Restore an image/container pair from the most recent backup"
 	echo "  archive  Archive the engagement container in $ENGAGEMENT_DIR"
 	echo "  delete   Remove all engagement data"
 }
@@ -92,20 +100,14 @@ archiveEngagement () {
 	echo ">>>> Stopping Docker container..."
 	stopEngagement
 
-	echo ">>>> Committing changes to Docker container..."
-	docker commit --author "$USER" --message "Archive for $(date)" "$NAME"
-	echo ">>>> Exporting Docker container..."
-	ARCHIVE_DIR="$ENGAGEMENT_DIR/Archives/$(date "+%Y-%m-%d %H%M")"
-	mkdir --parents "$ARCHIVE_DIR"
-	docker save --output "$ARCHIVE_DIR/$NAME.tar" "$NAME"
-	echo ">>>> Compressing exported image (this may take some time)..."
-	xz --verbose "$ARCHIVE_DIR/$NAME.tar"
+	commitToImage
 	removeContainerImagePair
+
 	echo ">>>> Archiving this control script..."
-	mv --force "$SCRIPT" "$ARCHIVE_DIR"/
+	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
 
 	echo ""
-	echo "Engagement $NAME has been archived in $ARCHIVE_DIR."
+	echo "Engagement $NAME has been archived in $ENGAGEMENT_DIR."
 }
 
 # Remove all engagement data.
@@ -115,7 +117,7 @@ deleteEngagement () {
 	echo "script, and data directory for $NAME. The following objects will be"
 	echo "deleted:"
 	echo ""
-	echo "  Docker Container:     $NAME ($(echo "$CONTAINER_DATA" | cut -d "|" -f 1))"
+	echo "  Docker Container:     $NAME ($ID)"
 	echo "  Engagement Directory: $ENGAGEMENT_DIR"
 	echo "  Control Script:       $SCRIPT"
 	echo ""
@@ -136,6 +138,63 @@ deleteEngagement () {
 		echo ""
 		echo "Engagement deletion aborted."
 	fi
+}
+
+# Back up the Docker container in ENGAGEMENT_DIR.
+#
+backupEngagement () {
+	echo ">>>> Stopping Docker container..."
+	stopEngagement
+
+	commitToImage
+
+	echo ""
+	echo "Engagement $NAME has been backed up in $BACKUP_DIR."
+}
+
+# Restore from the most recent backup.
+#
+restoreEngagement () {
+	if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.tar" ]]; then
+		echo ">>>> Stopping Docker container..."
+		stopEngagement
+		removeContainerImagePair
+
+		echo ">>>> Restoring image..."
+		docker load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
+		echo ">>>> Fixing image tag..."
+		CURRENT_TAG="$(docker images --format "{{.Tag}}" "$NAME")"
+		docker image tag "$NAME:$CURRENT_TAG" "$NAME:latest"
+		docker rmi "$NAME:$CURRENT_TAG"
+		echo ">>>> Recreating container..."
+		docker create --name "$NAME" \
+		              --publish 3389:3389 \
+		              --tty \
+		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
+		                "$NAME"
+
+		echo ""
+		echo "Engagement $NAME has been restored from the backup at $ENGAGEMENT_DIR/Backups/$NAME.tar."
+	else
+		echo "No backup found at $ENGAGEMENT_DIR/Backups/$NAME.tar!"
+	fi
+}
+
+# Helper function that commits changes in a container to the underlying
+# image and exports the results.
+#
+commitToImage () {
+	echo ">>>> Committing changes to temporary image..."
+	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
+	docker commit --author "$USER" --message "$NAME backup for $(date)" "$NAME" "$NAME:$TIMESTAMP"
+	echo ">>>> Exporting temporary image..."
+	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
+	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
+	mkdir --parents "$BACKUP_DIR"
+	docker save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
+	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
+	echo ">>>> Removing temporary image..."
+	docker rmi --force "${NAME}:${TIMESTAMP}"
 }
 
 # Helper function specifically for cleaning up Docker container/image
@@ -180,6 +239,12 @@ case "$1" in
 		else
 			scriptHelp
 		fi
+		;;
+	"backup")
+		backupEngagement
+		;;
+	"restore")
+		restoreEngagement
 		;;
 	"archive")
 		archiveEngagement

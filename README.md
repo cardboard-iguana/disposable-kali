@@ -6,9 +6,7 @@ This setup is probably sufficiently opinionated that it won't be useful out-of-t
 ## Prerequisits
 ### macOS
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [jq](https://jqlang.github.io/jq/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
-- [XZ Utils](https://tukaani.org/xz/)
 
 Using [Homebrew](https://brew.sh/):
 
@@ -18,16 +16,12 @@ Using [Homebrew](https://brew.sh/):
 #
 brew install \
      homebrew/cask/docker \
-     jq \
-     microsoft-remote-desktop \
-     xz
+     microsoft-remote-desktop
 ```
 
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
-- [jq](https://jqlang.github.io/jq/)
 - [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
-- [XZ Utils](https://tukaani.org/xz/)
 
 On [Debian](https://debian.org/):
 
@@ -46,10 +40,7 @@ usermod --append --groups docker $USER
 # Install additional tools. Alternately, replace `freerdp2-x11` with
 # `freerdp2-wayland`.
 #
-apt install \
-    freerdp2-x11 \
-    jq \
-    xz-utils
+apt install freerdp2-x11
 ```
 
 ### Android
@@ -65,7 +56,9 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT stop`: Stop the engagement's container.
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
 - `$CONTROL_SCRIPT desktop`: Connect to a desktop in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary. (**Linux only!** For on macOS, use `$CONTROL_SCRIPT start` and then connect to `localhost:3389` using an RDP client).
-- `$CONTROL_SCRIPT archive`: Archive the engagement container and control script in the data directory. This is generally what you'll want to do at the end of the engagement.
+- `$CONTROL_SCRIPT backup`: Backup the engagement container in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
+- `$CONTROL_SCRIPT restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
+- `$CONTROL_SCRIPT archive`: Backup the engagement container and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
 
 ### Android

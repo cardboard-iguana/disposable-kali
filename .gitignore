@@ -1,0 +1,5 @@
+# Ignore temporary files and other annoying things
+.DS_Store
+._*
+*~
+*.swp
