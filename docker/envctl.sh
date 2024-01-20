@@ -57,7 +57,7 @@ scriptHelp () {
 	fi
 	echo "  backup   Commit changes to the underlying image and back it up"
 	echo "  restore  Restore an image/container pair from the most recent backup"
-	echo "  archive  Archive the engagement container in $ENGAGEMENT_DIR"
+	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
 	echo "  delete   Remove all engagement data"
 }
 
