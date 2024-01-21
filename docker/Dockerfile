@@ -285,10 +285,6 @@ if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ 
     tmux list-sessions | grep \$(hostname) \\
                        | grep "(attached)" > /dev/null \\
                       || exec tmux -2 new-session -A -s \$(hostname)
-elif [[ -n "\$TMUX" ]]; then
-    function tcopy () {
-        tmux save-buffer - | xclip -selection clipboard
-    }
 fi
 CONF
 
