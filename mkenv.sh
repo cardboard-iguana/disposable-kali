@@ -67,7 +67,7 @@ echo "  Docker Container:     $NAME (kalilinux/kali-rolling)"
 echo "  Engagement Directory: $ENGAGEMENT_DIR"
 echo "  Control Script:       $SCRIPT"
 echo ""
-read -n 1 -p "Is this correct? (Y/N) " CONFIRMATION
+read -n 1 -p "Is this correct? (y/N) " CONFIRMATION
 echo ""
 
 if [[ ! "$CONFIRMATION" =~ ^[yY]$ ]]; then
