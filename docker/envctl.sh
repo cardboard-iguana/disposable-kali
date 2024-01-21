@@ -93,7 +93,7 @@ startGUI () {
 	else
 		FREERDP=xfreerdp
 	fi
-	$FREERDP /bpp:16 /dynamic-resolution /u:$USER /v:localhost:3389
+	$FREERDP /bpp:16 /dynamic-resolution /u:$USER /v:127.0.0.1:3389
 }
 
 # Archive Docker container and control script in ENGAGEMENT_DIR.
@@ -170,7 +170,7 @@ restoreEngagement () {
 		docker rmi "$NAME:$CURRENT_TAG"
 		echo ">>>> Recreating container..."
 		docker create --name "$NAME" \
-		              --publish 3389:3389 \
+		              --publish 127.0.0.1:3389:3389 \
 		              --tty \
 		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
 		                "$NAME"

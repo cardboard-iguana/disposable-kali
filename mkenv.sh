@@ -118,7 +118,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 		--tag "$NAME" -
 
 	docker create --name "$NAME" \
-	              --publish 3389:3389 \
+	              --publish 127.0.0.1:3389:3389 \
 	              --tty \
 	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
 	                "$NAME"
