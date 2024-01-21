@@ -80,31 +80,32 @@ fi
 #
 mkdir --parents "$ENGAGEMENT_DIR"
 
-# Build Docker container.
-#
-# Note the use of --no-cache for `docker build`. There are two reasons
-# for this:
-#
-# Firstly, username, timezone, and password changes don't necessarily
-# invalidate the build cache, since secrets aren't exposed (generally a
-# good thing). While one could attempt to cachebust using, say, a SHA256
-# sum of these values, such a hash would still be deterministic (and
-# recorded in Docker's build logs), and thus the data could be recovered
-# by crute-forcing. Adding a salt would just result in the cache being
-# invalidated on every run anyway, so why go through the extra effort?
-#
-#     https://github.com/moby/moby/issues/1996#issuecomment-185872769
-#
-# Secondly, the fetching packages to install initially really shouldn't
-# be cached even though it's the longest, most annoying step (upwards of
-# ~15 minutes), since doing so can cause us to miss out on security
-# updates.
-#
-# Building without a cache isn't quite as bad as it sounds, because in
-# practice most of the time a new engagement is only going to be built
-# daily at worse, and more likely only once every 2 - 3 weeks.
-#
 if [[ "$CODE_PATH" == "docker" ]]; then
+	# Build Docker container.
+	#
+	# Note the use of --no-cache for `docker build`. There are two
+	# reasons for this:
+	#
+	# Firstly, username, timezone, and password changes don't
+	# necessarily invalidate the build cache, since secrets aren't
+	# exposed (generally a good thing). While one could attempt to
+	# cachebust using, say, a SHA256 sum of these values, such a hash
+	# would still be deterministic (and recorded in Docker's build
+	# logs), and thus the data could be recovered by brute-forcing.
+	# Adding a salt would just result in the cache being invalidated on
+	# every run anyway, so why go through the extra effort?
+	#
+	#     https://github.com/moby/moby/issues/1996#issuecomment-185872769
+	#
+	# Secondly, the fetching packages to install initially really
+	# shouldn't be cached even though it's the longest, most annoying
+	# step (upwards of ~15 minutes), since doing so can cause us to miss
+	# out on security updates.
+	#
+	# Building without a cache isn't quite as bad as it sounds, because
+	# in practice most of the time a new engagement is only going to be
+	# built daily at worse, and more likely only once every 2 - 3 weeks.
+	#
 	docker pull kalilinux/kali-rolling
 
 	export USER_NAME USER_PASS TIMEZONE

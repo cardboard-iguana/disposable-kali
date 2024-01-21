@@ -13,7 +13,9 @@ STATE="$(docker container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/n
 #
 if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
-elif [[ -n "$ID" ]] || [[ -d "$ENGAGEMENT_DIR" ]] || [[ -f "$SCRIPT" ]]; then
+elif [[ -n "$ID" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+	SANITY="100%"
+elif [[ "$1" == "help" ]] || [[ -z "$1" ]]; then
 	SANITY="100%"
 else
 	SANITY="0%"
