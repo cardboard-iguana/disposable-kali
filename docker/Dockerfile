@@ -12,10 +12,8 @@ apt update       --quiet --assume-yes --fix-missing
 apt full-upgrade --quiet --assume-yes --fix-broken
 
 apt install --quiet --assume-yes \
-    dialog
-
-apt install --quiet --assume-yes \
     ca-certificates \
+    dialog \
     curl \
     gnupg
 
