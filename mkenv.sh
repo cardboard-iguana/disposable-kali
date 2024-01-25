@@ -106,8 +106,6 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	# in practice most of the time a new engagement is only going to be
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
-	docker pull kalilinux/kali-rolling
-
 	export USER_NAME USER_PASS TIMEZONE
 
 	cat docker/Dockerfile | docker build \
