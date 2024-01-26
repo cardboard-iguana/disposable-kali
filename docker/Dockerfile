@@ -103,6 +103,8 @@ make-ssl-cert generate-default-snakeoil
 
 adduser xrdp ssl-cert
 
+touch /root/.hushlogin
+
 msfdb init
 /etc/init.d/postgresql stop
 EOF
@@ -163,6 +165,8 @@ EOF
 RUN --mount=type=secret,id=USER_NAME <<EOF
 export USER_NAME="$(cat /run/secrets/USER_NAME)"
 export USER_HOME="/home/$USER_NAME"
+
+touch $USER_HOME/.hushlogin
 
 mkdir --parents $USER_HOME/.config/autostart
 
