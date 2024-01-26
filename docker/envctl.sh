@@ -68,6 +68,8 @@ scriptHelp () {
 startEngagement () {
 	if [[ "$STATE" != "running" ]]; then
 		docker start "$NAME"
+		waitForIt
+		echo "ready"
 	fi
 }
 
@@ -81,13 +83,13 @@ stopEngagement () {
 #
 startCLI () {
 	startEngagement
-	waitForIt
-	docker exec --tty --interactive "$NAME" /usr/bin/bash
+
+	docker exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/bash
 }
 
 startGUI () {
 	startEngagement
-	waitForIt
+
 	if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
 		FREERDP=wlfreerdp
 	else

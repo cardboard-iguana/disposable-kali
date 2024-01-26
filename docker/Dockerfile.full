@@ -12,8 +12,26 @@ apt update       --quiet --assume-yes --fix-missing
 apt full-upgrade --quiet --assume-yes --fix-broken
 
 apt install --quiet --assume-yes \
-    burpsuite \
+    ca-certificates \
     dialog \
+    curl \
+    gnupg
+
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list
+apt update --quiet --assume-yes
+
+apt install --quiet --assume-yes \
+    aspell \
+    aspell-en \
+    awscli \
+    azure-cli \
+    base58 \
+    build-essential \
+    burpsuite \
+    code-oss \
+    colorized-logs \
+    easy-rsa \
     flameshot \
     fonts-droid-fallback \
     fonts-liberation \
@@ -25,13 +43,26 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-core \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
+    freerdp2-x11 \
+    gobuster \
+    google-cloud-sdk \
+    ipcalc \
+    jq \
     kali-desktop-xfce \
-    metasploit-framework \
+    kali-linux-default \
+    knot-dnsutils \
+    mingw-w64 \
     nano \
-    openssh-client \
-    openvpn \
-    tmux \
+    npm \
+    powercat \
+    qalc \
+    qt5-gtk-platformtheme \
+    qt6-gtk-platformtheme \
+    rlwrap \
+    seclists \
+    testssl.sh \
     xclip \
+    xdotool \
     xorg \
     xorgxrdp \
     xrdp
@@ -89,7 +120,7 @@ rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"\+lock-screen"/"-lock-screen"/'                         /etc/xdg/xfce4/panel/default.xml
 EOF
 
 # Create update script (useful for long-running containiners)
@@ -114,7 +145,7 @@ sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"\+lock-screen"/"-lock-screen"/'                         /etc/xdg/xfce4/panel/default.xml
 
 while IFS= read -d '' -r SKEL_DIR; do
     HOME_DIR="\$(echo "\$SKEL_DIR" | sed -e "s#^/etc/skel#\$HOME#")"
@@ -172,7 +203,7 @@ export USER_NAME="$(cat /run/secrets/USER_NAME)"
 
 useradd --create-home \
         --shell /usr/bin/bash \
-        --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video \
+        --groups adm,audio,bluetooth,cdrom,dialout,dip,floppy,kismet,netdev,plugdev,sudo,staff,users,video \
           $USER_NAME
 
 echo "${USER_NAME}:$(cat /run/secrets/USER_PASS)" | chpasswd
@@ -194,7 +225,7 @@ cat > $USER_HOME/.config/autostart/set-flameshot-selection-shortcut.desktop << A
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot selected area screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path $USER_HOME/Desktop"
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --set "flameshot gui --clipboard --path $USER_HOME/Desktop"
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -204,7 +235,7 @@ cat > $USER_HOME/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUT
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot full desktop screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path $USER_HOME/Desktop"
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --set "flameshot full --clipboard --path $USER_HOME/Desktop"
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -276,6 +307,9 @@ cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
 </map>
 CONF
 
+mkdir --parents $USER_HOME/BurpSuite
+curl --silent --output $USER_HOME/BurpSuite/jython-standalone-2.7.3.jar \
+     https://repo1.maven.org/maven2/org/python/jython-standalone/2.7.3/jython-standalone-2.7.3.jar
 
 mkdir -p $USER_HOME/.ssh
 cat > $USER_HOME/.ssh/config << CONF
