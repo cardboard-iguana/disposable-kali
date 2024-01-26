@@ -93,7 +93,7 @@ startGUI () {
 	else
 		FREERDP=xfreerdp
 	fi
-	$FREERDP /bpp:16 /dynamic-resolution /u:$USER /v:127.0.0.1:3389
+	$FREERDP /bpp:16 /dynamic-resolution /rfx /u:$USER /v:127.0.0.1:3389
 }
 
 # Archive Docker container and control script in ENGAGEMENT_DIR.
