@@ -5,19 +5,23 @@ This setup is probably sufficiently opinionated that it won't be useful out-of-t
 
 ## Prerequisits
 ### macOS
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Rancher Desktop](https://rancherdesktop.io/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
 
 Using [Homebrew](https://brew.sh/):
 
 ```bash
-# Install Docker from a cask rather than formula in order to get the
-# most recent version.
+# Install Rancher Desktop and Microsoft Remote Desktop.
 #
-brew install \
-     homebrew/cask/docker \
-     microsoft-remote-desktop
+brew install microsoft-remote-desktop rancher
 ```
+
+Rancher Desktop must be run once before trying to deploy a disposable environment. Recommended prences tweaks:
+
+- Application → Behavior → Startup → Automatically start at login → On
+- Application → Behavior → Background → Start in the background → On
+- Virtual Machine → Volumes → Mount Type → virtiofs
+- Virtual Machine → Emulation → Virtual Machine Type → VZ
 
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
@@ -33,7 +37,7 @@ curl --silent --location https://download.docker.com/linux/debian/gpg | gpg --de
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian $(grep -E '^VERSION_CODENAME=' /etc/os-release | sed 's/.*=//') stable" > /etc/apt/sources.list.d/docker.list
 
 apt update
-apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt install containerd.io docker-buildx-plugin docker-ce docker-ce-cli docker-compose-plugin
 
 usermod --append --groups docker $USER
 
