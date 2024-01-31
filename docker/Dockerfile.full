@@ -123,6 +123,13 @@ sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce
 sed -i 's/"\+lock-screen"/"-lock-screen"/'                         /etc/xdg/xfce4/panel/default.xml
 EOF
 
+# Fix VS Code .desktop files
+#
+RUN <<EOF
+sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
+EOF
+
 # Create update script (useful for long-running containiners)
 #
 RUN <<EOF
@@ -146,6 +153,9 @@ sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg
 sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"\+lock-screen"/"-lock-screen"/'                         /etc/xdg/xfce4/panel/default.xml
+
+sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
 
 while IFS= read -d '' -r SKEL_DIR; do
     HOME_DIR="\$(echo "\$SKEL_DIR" | sed -e "s#^/etc/skel#\$HOME#")"
