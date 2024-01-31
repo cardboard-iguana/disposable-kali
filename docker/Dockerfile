@@ -92,9 +92,23 @@ sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce
 sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
 EOF
 
+# Fix scroll on macOS
+#
+RUN --mount=type=secret,id=IS_MACOS <<EOF
+export IS_MACOS="$(cat /run/secrets/IS_MACOS)"
+
+if [ "$IS_MACOS" = "yes" ]; then
+    sed -i 's/^\[SessionVariables\]$/\[SessionVariables\]\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
+fi
+
+unset IS_MACOS
+EOF
+
 # Create update script (useful for long-running containiners)
 #
-RUN <<EOF
+RUN --mount=type=secret,id=IS_MACOS <<EOF
+export IS_MACOS="$(cat /run/secrets/IS_MACOS)"
+
 cat > /usr/local/bin/update.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -116,6 +130,18 @@ sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg
 sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
 
+SCRIPT
+
+if [ "$IS_MACOS" = "yes" ]; then
+cat >> /usr/local/bin/update.sh << SCRIPT
+if [[ \$(grep -Ec '^XRDP_XORG_TOUCHPAD_SCROLL_HACK=yes$' /etc/xrdp/sesman.ini) -eq 0 ]]; then
+    sudo sed -i 's/^\[SessionVariables\]$/\[SessionVariables\]\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
+fi
+
+SCRIPT
+fi
+
+cat >> /usr/local/bin/update.sh << SCRIPT
 while IFS= read -d '' -r SKEL_DIR; do
     HOME_DIR="\$(echo "\$SKEL_DIR" | sed -e "s#^/etc/skel#\$HOME#")"
     mkdir -p "\$HOME_DIR"
@@ -141,6 +167,8 @@ find -L /usr/share/nano -type f -iname '*.nanorc' | sed 's/^/include /' > \$HOME
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
+
+unset IS_MACOS
 EOF
 
 # Create Docker startup script

@@ -51,6 +51,12 @@ fi
 USER_NAME="$USER"
 TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 
+if [[ "$(uname)" == "Darwin" ]]; then
+	IS_MACOS="yes"
+else
+	IS_MACOS="no"
+fi
+
 # Confirm details.
 #
 echo ""
@@ -106,10 +112,11 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	# in practice most of the time a new engagement is only going to be
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
-	export USER_NAME USER_PASS TIMEZONE
+	export IS_MACOS USER_NAME USER_PASS TIMEZONE
 
 	cat docker/Dockerfile | docker build \
 		--no-cache \
+		--secret id=IS_MACOS \
 		--secret id=USER_NAME \
 		--secret id=USER_PASS \
 		--secret id=TIMEZONE \
@@ -121,7 +128,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
 	                "$NAME"
 
-	unset USER_NAME USER_PASS TIMEZONE
+	unset IS_MACOS USER_NAME USER_PASS TIMEZONE
 
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
 else
