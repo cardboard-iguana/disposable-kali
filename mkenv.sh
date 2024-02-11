@@ -10,16 +10,34 @@ if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
 		CODE_PATH="docker"
 	fi
 elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
-	echo "Coming soon!"
-	exit
+	if [[ ! -f proot/envctl.sh ]]; then
+		echo "This script must be run from the root of the disposable-kali repo!"
+		exit 1
+	else
+		CODE_PATH="proot"
+	fi
 else
 	echo "No usable install of Docker or PRoot Distro found!"
+	exit 1
+fi
+
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+	echo "$HOME/.local/bin must bin in your PATH!"
 	exit 1
 fi
 
 # Gather engagement information.
 #
 read -p "What is the engagement name? " ENGAGEMENT_NAME
+
+if [[ "$CODE_PATH" == "docker" ]]; then
+	USER_NAME="$USER"
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	read -p "What name should be used for the non-root container user? " USER_NAME
+else
+	echo "You should not be here."
+	exit 2
+fi
 
 GOOD_PASSWORD="no"
 while [[ "$GOOD_PASSWORD" == "no" ]]; do
@@ -40,21 +58,17 @@ done
 # Determine build variables.
 #
 NAME="$(echo -n "$ENGAGEMENT_NAME" | tr -c -s '[:alnum:]_-' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^[_-]\+//;s/[_-]\+$//')"
-ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
+SCRIPT="$HOME/.local/bin/${NAME}.sh"
 
 if [[ "$CODE_PATH" == "docker" ]]; then
-	SCRIPT="$HOME/.local/bin/${NAME}.sh"
+	ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
+	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
+	TIMEZONE="$(getprop persist.sys.timezone)"
 else
-	SCRIPT="???"
-fi
-
-USER_NAME="$USER"
-TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
-
-if [[ "$(uname)" == "Darwin" ]]; then
-	IS_MACOS="yes"
-else
-	IS_MACOS="no"
+	echo "You should not be here."
+	exit 2
 fi
 
 # Confirm details.
@@ -69,7 +83,14 @@ echo "  Time Zone:       $TIMEZONE"
 echo ""
 echo "The following engagement objects will be created:"
 echo ""
-echo "  Docker Container:     $NAME (kalilinux/kali-rolling)"
+if [[ "$CODE_PATH" == "docker" ]]; then
+	echo "  Docker Container:     $NAME (kalilinux/kali-rolling)"
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	echo "  Proot Distribution:   $NAME (kali-nethunter/current)"
+else
+	echo "You should not be here."
+	exit 2
+fi
 echo "  Engagement Directory: $ENGAGEMENT_DIR"
 echo "  Control Script:       $SCRIPT"
 echo ""
@@ -112,6 +133,12 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	# in practice most of the time a new engagement is only going to be
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
+	if [[ "$(uname)" == "Darwin" ]]; then
+		IS_MACOS="yes"
+	else
+		IS_MACOS="no"
+	fi
+
 	export IS_MACOS USER_NAME USER_PASS TIMEZONE
 
 	cat docker/Dockerfile | docker build \
@@ -131,8 +158,18 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	unset IS_MACOS USER_NAME USER_PASS TIMEZONE
 
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	cat > "$PREFIX/etc/proot-distro/${NAME}.sh" <<- EOF
+	DISTRO_NAME="$ENGAGEMENT_NAME"
+	DISTRO_COMMENT="Kali Linux NetHunter (build date $(date))"
+	TARBALL_URL['aarch64']="https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz"
+	TARBALL_SHA256['aarch64']="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
+	EOF
+
+	# More stuff goes here (and above!)...
 else
-	echo "Coming soon!"
+	echo "You should not be here."
+	exit 2
 fi
 
 # Finish up.

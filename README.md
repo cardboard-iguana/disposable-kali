@@ -4,6 +4,8 @@ Disposable [Kali Linux](https://kali.org) environments using [Docker](https://ww
 This setup is probably sufficiently opinionated that it won't be useful out-of-the box for `$RANDOM_HACKER`. However, it is provided here as a resource for others to study, fork, and draw inspiration from. (Also, I'm not adverse to integrating other folks' suggestions! I'm just not going to make any changes that either make my own use cases more complicated or this repo more difficult to maintain in general. Within those bounds though, issues and pull requests are welcome!)
 
 ## Prerequisits
+On all systems, `$HOME/.local/bin` is expected to bin in your `$PATH`.
+
 ### macOS
 - [Rancher Desktop](https://rancherdesktop.io/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
@@ -48,7 +50,24 @@ apt install freerdp2-x11
 ```
 
 ### Android
-Coming soon!
+- [Termux](https://f-droid.org/en/packages/com.termux/)
+- [Termux:X11](https://github.com/termux/termux-x11)
+
+A couple of Termux packages are also required:
+
+```bash
+# Set up the X11 tools repo (required to install `termux-x11-nightly`).
+#
+pkg install x11-repo
+
+# Install required packages.
+#
+pkg install proot-distro pulseaudio termux-x11-nightly virglrenderer-android which
+
+# Enable access to device storage.
+#
+termux-setup-storage
+```
 
 ## Usage
 To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh` from inside of it.
