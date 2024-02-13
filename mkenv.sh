@@ -10,7 +10,7 @@ if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
 		CODE_PATH="docker"
 	fi
 elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
-	if [[ ! -f proot/envctl.sh ]]; then
+	if [[ ! -f proot/envctl.sh ]] || [[ ! -f proot/plugin.sh ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
 		exit 1
 	else
@@ -96,16 +96,17 @@ echo "  Control Script:       $SCRIPT"
 echo ""
 read -n 1 -p "Is this correct? (y/N) " CONFIRMATION
 echo ""
+echo ""
 
 if [[ ! "$CONFIRMATION" =~ ^[yY]$ ]]; then
-	echo ""
 	echo "Engagement creation aborted."
 	exit
 fi
 
-# Create engagement directory.
+# Create necessary directories.
 #
 mkdir --parents "$ENGAGEMENT_DIR"
+mkdir --parents "$HOME/.local/bin"
 
 if [[ "$CODE_PATH" == "docker" ]]; then
 	# Build Docker container.
@@ -159,14 +160,14 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
 elif [[ "$CODE_PATH" == "proot" ]]; then
-	cat > "$PREFIX/etc/proot-distro/${NAME}.sh" <<- EOF
-	DISTRO_NAME="$ENGAGEMENT_NAME"
-	DISTRO_COMMENT="Kali Linux NetHunter (build date $(date))"
-	TARBALL_URL['aarch64']="https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz"
-	TARBALL_SHA256['aarch64']="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
-	EOF
+	TARBALL_SHA256="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
+	BUILD_DATE="$(date)"
 
-	# More stuff goes here (and above!)...
+	sed "s|{{distro-name}}|$ENGAGEMENT_NAME|;s|{{build-date}}|$DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.sh"
+
+	proot-distro install "$NAME"
+
+	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 else
 	echo "You should not be here."
 	exit 2
