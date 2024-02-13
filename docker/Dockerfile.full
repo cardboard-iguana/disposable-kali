@@ -203,8 +203,6 @@ cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
   <entry key="eulacommunity" value="4"/>
 </map>
 CONF
-
-find -L /usr/share/nano -type f -iname '*.nanorc' | sed 's/^/include /' > \$HOME/.nanorc
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
@@ -386,6 +384,7 @@ CONF
 cat > $USER_HOME/.tmux.conf << CONF
 set -g default-terminal "tmux-256color"
 set -g allow-passthrough off
+set -g history-limit 16383
 
 set -g mouse on
 set-option -s set-clipboard off
@@ -393,7 +392,7 @@ bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xc
 bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 CONF
 
-find -L /usr/share/nano -type f -iname '*.nanorc' | sed 's/^/include /' > $USER_HOME/.nanorc
+echo "set tabsize 4" > $USER_HOME/.nanorc
 
 mkdir --parents $USER_HOME/Documents
 
