@@ -33,7 +33,7 @@ read -p "What is the engagement name? " ENGAGEMENT_NAME
 if [[ "$CODE_PATH" == "docker" ]]; then
 	USER_NAME="$USER"
 elif [[ "$CODE_PATH" == "proot" ]]; then
-	read -p "What name should be used for the non-root container user? " USER_NAME
+	USER_NAME="kali"
 else
 	echo "You should not be here."
 	exit 2
@@ -166,6 +166,10 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	sed "s|{{distro-name}}|$ENGAGEMENT_NAME|;s|{{build-date}}|$DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.sh"
 
 	proot-distro install "$NAME"
+
+	DISTRO_PREFIX="$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME"
+
+	proot-distro login "$NAME" -- bash -c "echo 'kali:${USER_PASS}' | chpasswd"
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 else

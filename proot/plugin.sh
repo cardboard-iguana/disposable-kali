@@ -85,7 +85,7 @@ distro_setup() {
 		sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     $DISTRO_PREFIX/etc/xdg/xfce4/panel/default.xml
 		sed -i 's/"+lock-screen"/"-lock-screen"/'                          $DISTRO_PREFIX/etc/xdg/xfce4/panel/default.xml
 
-		# Create update script (useful for long-running containiners).
+		# Create update script (useful for long-running environments).
 		#
 		cat > $DISTRO_PREFIX/usr/local/bin/update.sh <<- EOF
 		#!/usr/bin/env bash
@@ -178,183 +178,156 @@ distro_setup() {
 		EOF
 
 		chmod 755 $DISTRO_PREFIX/usr/local/bin/gui.sh
+
+		# User setup.
+		#
+		run_proot_cmd usermod --append --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video kali
+
+		echo "kali ALL=(ALL:ALL) ALL" > $DISTRO_PREFIX/etc/sudoers.d/kali
+
+		# Home directory setup.
+		#
+		touch $DISTRO_PREFIX/home/kali/.hushlogin
+
+		mkdir --parents $DISTRO_PREFIX/home/kali/.config/autostart
+
+		cat > $DISTRO_PREFIX/home/kali/.config/autostart/set-flameshot-selection-shortcut.desktop <<- EOF
+		[Desktop Entry]
+		Type=Application
+		Name=Set Flameshot selected area screenshot shortcut
+		Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path $DISTRO_PREFIX/home/kali/Desktop"
+		StartupNotify=false
+		Terminal=false
+		Hidden=false
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.config/autostart/set-flameshot-desktop-shortcut.desktop <<- EOF
+		[Desktop Entry]
+		Type=Application
+		Name=Set Flameshot full desktop screenshot shortcut
+		Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path $DISTRO_PREFIX/home/kali/Desktop"
+		StartupNotify=false
+		Terminal=false
+		Hidden=false
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.config/autostart/set-session-name.desktop <<- EOF
+		[Desktop Entry]
+		Type=Application
+		Name=Disable session autosave
+		Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+		StartupNotify=false
+		Terminal=false
+		Hidden=false
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.config/autostart/disable-session-autosave.desktop <<- EOF
+		[Desktop Entry]
+		Type=Application
+		Name=Disable session autosave
+		Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
+		StartupNotify=false
+		Terminal=false
+		Hidden=false
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.config/autostart/disable-session-save-on-exit.desktop <<- EOF
+		[Desktop Entry]
+		Type=Application
+		Name=Disable session autosave
+		Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+		StartupNotify=false
+		Terminal=false
+		Hidden=false
+		EOF
+
+		mkdir --parents $DISTRO_PREFIX/home/kali/.BurpSuite
+		cat > $DISTRO_PREFIX/home/kali/.BurpSuite/UserConfigCommunity.json <<- EOF
+		{
+		    "user_options":{
+		        "display":{
+		            "user_interface":{
+		                "look_and_feel":"Dark"
+		            }
+		        },
+		        "misc":{
+		            "show_learn_tab":false
+		        },
+		        "proxy":{
+		            "http_history":{
+		                "sort_column":"#",
+		                "sort_order":"descending"
+		            },
+		            "websockets_history":{
+		                "sort_column":"#",
+		                "sort_order":"descending"
+		            }
+		        }
+		    }
+		}
+		EOF
+
+		mkdir --parents $DISTRO_PREFIX/home/kali/.java/.userPrefs/burp
+		head --lines -1 $DISTRO_PREFIX/etc/skel/.java/.userPrefs/burp/prefs.xml > $DISTRO_PREFIX/home/kali/.java/.userPrefs/burp/prefs.xml
+		cat >> $DISTRO_PREFIX/home/kali/.java/.userPrefs/burp/prefs.xml <<- EOF
+		  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
+		  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
+		  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
+		  <entry key="eulacommunity" value="4"/>
+		</map>
+		EOF
+
+		mkdir -p $DISTRO_PREFIX/home/kali/.ssh
+		cat > $DISTRO_PREFIX/home/kali/.ssh/config <<- EOF
+		Host *
+		    ForwardAgent no
+		EOF
+		chmod 700 $DISTRO_PREFIX/home/kali/.ssh
+		chmod 600 $DISTRO_PREFIX/home/kali/.ssh/*
+
+		cat > $DISTRO_PREFIX/home/kali/.inputrc <<- EOF
+		"\\e[A": history-search-backward
+		"\\eOA": history-search-backward
+
+		"\\e[B": history-search-forward
+		"\\eOB": history-search-forward
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.bash_aliases <<- EOF
+		#!/usr/bin/env bash
+
+		export LANG=en_US.UTF-8
+
+		if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
+		    tmux list-sessions | grep \$(hostname) \\
+		                       | grep "(attached)" > /dev/null \\
+		                      || exec tmux -2 new-session -A -s \$(hostname)
+		fi
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.xsessionrc <<- EOF
+		#!/usr/bin/env bash
+
+		export LANG=en_US.UTF-8
+		EOF
+
+		cat > $DISTRO_PREFIX/home/kali/.tmux.conf <<- EOF
+		set -g default-terminal "tmux-256color"
+		set -g allow-passthrough off
+		set -g history-limit 16383
+
+		set -g mouse on
+		set-option -s set-clipboard off
+		bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+		bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+		EOF
+
+		echo "set tabsize 4" > $DISTRO_PREFIX/home/kali/.nanorc
+
+		mkdir --parents $DISTRO_PREFIX/home/kali/Documents
+
+		run_proot_cmd chown --recursive kali:kali /home/kali
 	else
 		echo "Bad DISTRO_PREFIX! Post-install setup failed..."
 	fi
 }
-
-#####################
-## Dockerfile bits ##
-#####################
-
-# Create our normal user
-#
-RUN --mount=type=secret,id=USER_NAME --mount=type=secret,id=USER_PASS <<EOF
-export USER_NAME="$(cat /run/secrets/USER_NAME)"
-
-useradd --create-home \
-        --shell /usr/bin/bash \
-        --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video \
-          $USER_NAME
-
-echo "${USER_NAME}:$(cat /run/secrets/USER_PASS)" | chpasswd
-
-unset USER_NAME
-EOF
-
-# Home directory setup
-#
-RUN --mount=type=secret,id=USER_NAME <<EOF
-export USER_NAME="$(cat /run/secrets/USER_NAME)"
-export USER_HOME="/home/$USER_NAME"
-
-touch $USER_HOME/.hushlogin
-
-mkdir --parents $USER_HOME/.config/autostart
-
-cat > $USER_HOME/.config/autostart/set-flameshot-selection-shortcut.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set Flameshot selected area screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path $USER_HOME/Desktop"
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > $USER_HOME/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set Flameshot full desktop screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path $USER_HOME/Desktop"
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > $USER_HOME/.config/autostart/set-session-name.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session autosave
-Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > $USER_HOME/.config/autostart/disable-session-autosave.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session autosave
-Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > $USER_HOME/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session autosave
-Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-mkdir --parents $USER_HOME/.BurpSuite
-cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
-{
-    "user_options":{
-        "display":{
-            "user_interface":{
-                "look_and_feel":"Dark"
-            }
-        },
-        "misc":{
-            "show_learn_tab":false
-        },
-        "proxy":{
-            "http_history":{
-                "sort_column":"#",
-                "sort_order":"descending"
-            },
-            "websockets_history":{
-                "sort_column":"#",
-                "sort_order":"descending"
-            }
-        }
-    }
-}
-CONF
-
-mkdir --parents $USER_HOME/.java/.userPrefs/burp
-head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > $USER_HOME/.java/.userPrefs/burp/prefs.xml
-cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
-  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
-  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
-  <entry key="eulacommunity" value="4"/>
-</map>
-CONF
-
-
-mkdir -p $USER_HOME/.ssh
-cat > $USER_HOME/.ssh/config << CONF
-Host *
-    ForwardAgent no
-CONF
-chmod 700 $USER_HOME/.ssh
-chmod 600 $USER_HOME/.ssh/*
-
-cat > $USER_HOME/.inputrc << CONF
-"\\e[A": history-search-backward
-"\\eOA": history-search-backward
-
-"\\e[B": history-search-forward
-"\\eOB": history-search-forward
-CONF
-
-cat > $USER_HOME/.bash_aliases << CONF
-#!/usr/bin/env bash
-
-export LANG=en_US.UTF-8
-
-if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
-    tmux list-sessions | grep \$(hostname) \\
-                       | grep "(attached)" > /dev/null \\
-                      || exec tmux -2 new-session -A -s \$(hostname)
-fi
-CONF
-
-cat > $USER_HOME/.xsessionrc << CONF
-#!/usr/bin/env bash
-
-export LANG=en_US.UTF-8
-CONF
-
-cat > $USER_HOME/.tmux.conf << CONF
-set -g default-terminal "tmux-256color"
-set -g allow-passthrough off
-set -g history-limit 16383
-
-set -g mouse on
-set-option -s set-clipboard off
-bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-CONF
-
-echo "set tabsize 4" > $USER_HOME/.nanorc
-
-mkdir --parents $USER_HOME/Documents
-
-chown --recursive $USER_NAME:$USER_NAME $USER_HOME
-
-unset USER_NAME USER_HOME
-EOF
-
-# Docker exec/start
-#
-EXPOSE 3389
-ENTRYPOINT ["/usr/bin/bash"]
-CMD ["/usr/local/sbin/docker-init.sh"]

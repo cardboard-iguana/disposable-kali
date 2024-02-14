@@ -5,15 +5,14 @@ NAME="{{environment-name}}"
 # Core engagement files/data.
 #
 SCRIPT="$HOME/.local/bin/${NAME}.sh"
-ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-ID="$(docker container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
-STATE="$(docker container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
+ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
+DISTRO_ROOT="$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME"
 
 # Sanity check environment.
 #
 if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
-elif [[ -n "$ID" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+elif [[ -d "$DISTRO_ROOT" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
 elif [[ "$1" == "help" ]] || [[ -z "$1" ]]; then
 	SANITY="100%"
@@ -24,10 +23,10 @@ if [[ "$SANITY" == "0%" ]]; then
 	echo "The environment for $NAME appears to be damaged or incomplete, and is"
 	echo "not usable."
 	echo ""
-	if [[ -n "$ID" ]]; then
-		echo "  Docker Container:     $NAME ($ID)"
+	if [[ -d "$DISTRO_ROOT" ]]; then
+		echo "  PRoot Directory:      $DISTRO_ROOT"
 	else
-		echo "  Docker Container:     DOES NOT EXIST"
+		echo "  PRoot Directory:      DOES NOT EXIST"
 	fi
 	if [[ -d "$ENGAGEMENT_DIR" ]]; then
 		echo "  Engagement Directory: $ENGAGEMENT_DIR"
@@ -41,6 +40,12 @@ if [[ "$SANITY" == "0%" ]]; then
 	fi
 	echo ""
 	exit 1
+elif [[ $(pgrep -c proot) -gt 0 ]]; then
+	echo "You can only run one engagement environment at a time."
+	echo ""
+	echo "    $(pgrep -a proot)"
+	echo ""
+	exit 1
 fi
 
 # Print help.
@@ -51,61 +56,47 @@ scriptHelp () {
 	echo "Interact with the $NAME engagement environment."
 	echo ""
 	echo "Available commands:"
-	echo "  start    Start the engagement's container"
-	echo "  stop     Stop the engagement's container"
-	echo "  shell    Connect to a shell in the engagement's container"
-	if [[ "$(uname -s)" == "Linux" ]]; then
-		echo "  desktop  Connect to a desktop in the engagement's container"
-	fi
-	echo "  backup   Commit changes to the underlying image and back it up"
-	echo "  restore  Restore an image/container pair from the most recent backup"
+	echo "  shell    Connect to a shell in the engagement environment"
+	echo "  desktop  Connect to a desktop in the engagement environment"
+	echo "  backup   Back up the engagement environment"
+	echo "  restore  Restore the engagement environment from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
 	echo "  delete   Remove all engagement data"
+	echo ""
+	echo "Note that only a single engagement environment may be run at a time."
 }
 
-# Start/Stop container.
-#
-startEngagement () {
-	if [[ "$STATE" != "running" ]]; then
-		docker start "$NAME"
-		waitForIt
-		echo "ready"
-	fi
-}
-
-stopEngagement () {
-	if [[ "$STATE" == "running" ]]; then
-		docker stop "$NAME"
-	fi
-}
-
-# Connect to the engagement container.
+# Connect to the engagement environment.
 #
 startCLI () {
-	startEngagement
-
-	docker exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/bash
+	if [[ -n "$TMUX" ]]; then
+		proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- env TMUX="TMUX" /usr/local/bin/tui.sh
+	else
+		proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/tui.sh
+	fi
 }
 
 startGUI () {
-	startEngagement
+	export DISPLAY=:0
+	export GALLIUM_DRIVER=virpipe
+	export MESA_GL_VERSION_OVERRIDE=4.0
 
-	if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
-		FREERDP=wlfreerdp
-	else
-		FREERDP=xfreerdp
-	fi
-	$FREERDP /bpp:16 /dynamic-resolution /rfx /u:$USER /v:127.0.0.1:3389
+	virgl_test_server_android &
+	termux-x11 :0 &
+
+	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/gui.sh
+
+	pkill termux-x11
+	pkill virgl_test_server_android
 }
 
-# Archive Docker container and control script in ENGAGEMENT_DIR.
+# Archive engagement environment, PRoot Distro plugin, and control script in ENGAGEMENT_DIR.
 #
 archiveEngagement () {
-	echo ">>>> Stopping Docker container..."
-	stopEngagement
+	prootBackup
 
-	commitToImage
-	removeContainerImagePair
+	echo ">>>> Archiving PRoot Distro plugin..."
+	mv --force "$PREFIX/etc/proot-distro/${NAME}.sh" "$ENGAGEMENT_DIR/${NAME}.plugin.sh"
 
 	echo ">>>> Archiving this control script..."
 	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
@@ -117,20 +108,21 @@ archiveEngagement () {
 # Remove all engagement data.
 #
 deleteEngagement () {
-	echo "You are about to PERMENANTLY DELETE the Docker container, control"
-	echo "script, and data directory for $NAME. The following objects will be"
-	echo "deleted:"
+	echo "You are about to PERMENANTLY DELETE the engagement environment,"
+	echo "PRoot plugin, control script, and data directory for $NAME. The"
+	echo "following objects will be deleted:"
 	echo ""
-	echo "  Docker Container:     $NAME ($ID)"
+	echo "  PRoot Directory:      $DISTRO_ROOT"
+	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/{$NAME}.sh"
 	echo "  Engagement Directory: $ENGAGEMENT_DIR"
 	echo "  Control Script:       $SCRIPT"
 	echo ""
 	read -p "Please confirm by typing YES (all capitals): " CONFIRMATION
 
 	if [[ "$CONFIRMATION" == "YES" ]]; then
-		echo ">>>> Stopping Docker container..."
-		stopEngagement
-		removeContainerImagePair
+		echo ">>>> Deleting PRoot data..."
+		proot-distro remove "$NAME"
+		rm --force $PREFIX/etc/proot-distro/{$NAME}.sh
 		echo ">>>> Deleting engagement directory..."
 		rm --recursive --force "$ENGAGEMENT_DIR"
 		echo ">>>> Deleting this control script..."
@@ -144,13 +136,10 @@ deleteEngagement () {
 	fi
 }
 
-# Back up the Docker container in ENGAGEMENT_DIR.
+# Back up the engagement environment in ENGAGEMENT_DIR.
 #
 backupEngagement () {
-	echo ">>>> Stopping Docker container..."
-	stopEngagement
-
-	commitToImage
+	prootBackup
 
 	echo ""
 	echo "Engagement $NAME has been backed up in $BACKUP_DIR."
@@ -160,22 +149,8 @@ backupEngagement () {
 #
 restoreEngagement () {
 	if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.tar" ]]; then
-		echo ">>>> Stopping Docker container..."
-		stopEngagement
-		removeContainerImagePair
-
-		echo ">>>> Restoring image..."
-		docker load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
-		echo ">>>> Fixing image tag..."
-		CURRENT_TAG="$(docker images --format "{{.Tag}}" "$NAME")"
-		docker image tag "$NAME:$CURRENT_TAG" "$NAME:latest"
-		docker rmi "$NAME:$CURRENT_TAG"
-		echo ">>>> Recreating container..."
-		docker create --name "$NAME" \
-		              --publish 127.0.0.1:3389:3389 \
-		              --tty \
-		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
-		                "$NAME"
+		echo ">>>> Restoring environment..."
+		proot-distro restore "$ENGAGEMENT_DIR/Backups/$NAME.tar"
 
 		echo ""
 		echo "Engagement $NAME has been restored from the backup at $ENGAGEMENT_DIR/Backups/$NAME.tar."
@@ -184,65 +159,27 @@ restoreEngagement () {
 	fi
 }
 
-# Helper function that commits changes in a container to the underlying
-# image and exports the results.
+# Helper function that actually performs the environment backup.
 #
-commitToImage () {
-	echo ">>>> Committing changes to temporary image..."
+prootBackup () {
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
-	docker commit --author "$USER" --message "$NAME backup for $(date)" "$NAME" "$NAME:$TIMESTAMP"
-	echo ">>>> Exporting temporary image..."
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
+
+	echo ">>>> Backing up PRoot environment..."
 	mkdir --parents "$BACKUP_DIR"
-	docker save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
+	proot-distro backup --output "$BACKUP_FILE" "$NAME"
 	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
-	echo ">>>> Removing temporary image..."
-	docker rmi --force "${NAME}:${TIMESTAMP}"
-}
-
-# Helper function specifically for cleaning up Docker container/image
-# pairs.
-#
-removeContainerImagePair () {
-	echo ">>>> Removing Docker container..."
-	docker rm --force --volumes "$NAME"
-	echo ">>>> Removing Docker image..."
-	docker rmi --force "$NAME"
-	echo ">>>> Pruning Docker to remove dangling references..."
-	docker image prune --force
-}
-
-# Helper function that sleeps briefly.
-#
-waitForIt () {
-	SECONDS=10
-	echo -n ">>>> Sleeping briefly"
-	for STEP in $(seq 1 $SECONDS); do
-		sleep 1
-		echo -n "."
-	done
-	echo ""
 }
 
 # Flow control.
 #
 case "$1" in
-	"start")
-		startEngagement
-		;;
-	"stop")
-		stopEngagement
-		;;
 	"shell")
 		startCLI
 		;;
 	"desktop")
-		if [[ "$(uname -s)" == "Linux" ]]; then
-			startGUI
-		else
-			scriptHelp
-		fi
+		startGUI
 		;;
 	"backup")
 		backupEngagement
