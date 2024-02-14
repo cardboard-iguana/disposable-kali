@@ -160,6 +160,19 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
 elif [[ "$CODE_PATH" == "proot" ]]; then
+	# PRoot Distro engages in some serious nannying around pentesting
+	# distros. While I understand the Termux project's desire not to
+	# support script-kiddies, and support their refusal to include
+	# hacking tools (even if it makes my life harder), actively
+	# subverting user requests is, in my opinion, a step too far.
+	#
+	#     https://github.com/termux/proot-distro/commit/470525c55020d72b66b509066b8d71d59b62072c
+	#
+	# Proactively un-nerf pentest capabilities (even though we probably
+	# won't need that functionality ourselves in most cases).
+	#
+	sed -i 's/if .*(kali|parrot|nethunter|blackarch).*; then/if false; then/' $(which proot-distro)
+
 	TARBALL_SHA256="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
 	BUILD_DATE="$(date)"
 

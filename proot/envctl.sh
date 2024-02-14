@@ -40,10 +40,10 @@ if [[ "$SANITY" == "0%" ]]; then
 	fi
 	echo ""
 	exit 1
-elif [[ $(pgrep -c proot) -gt 0 ]]; then
+elif [[ $(pgrep --full --count proot) -gt 0 ]]; then
 	echo "You can only run one engagement environment at a time."
 	echo ""
-	echo "    $(pgrep -a proot)"
+	echo "    $(pgrep --full --list-full proot)"
 	echo ""
 	exit 1
 fi
@@ -69,6 +69,10 @@ scriptHelp () {
 # Connect to the engagement environment.
 #
 startCLI () {
+	unNerfProotDistro
+
+	# Prevent nested host/guest tmux sessions.
+	#
 	if [[ -n "$TMUX" ]]; then
 		proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- env TMUX="TMUX" /usr/local/bin/tui.sh
 	else
@@ -81,22 +85,26 @@ startGUI () {
 	export GALLIUM_DRIVER=virpipe
 	export MESA_GL_VERSION_OVERRIDE=4.0
 
-	virgl_test_server_android &
-	termux-x11 :0 &
+	virgl_test_server_android &> /dev/null &
+	termux-x11 :0 &> /dev/null &
+
+	unNerfProotDistro
 
 	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/gui.sh
 
-	pkill termux-x11
-	pkill virgl_test_server_android
+	pkill --full com.termux.x11
+	pkill --full virgl_test_server
+
+	rm --recursive --force $PREFIX/tmp/.X0-lock
+	rm --recursive --force $PREFIX/tmp/.X11-unix
+	rm --recursive --force $PREFIX/tmp/.virgl_test
 }
 
-# Archive engagement environment, PRoot Distro plugin, and control script in ENGAGEMENT_DIR.
+# Archive engagement environment, PRoot Distro plugin, and control
+# script in ENGAGEMENT_DIR.
 #
 archiveEngagement () {
 	prootBackup
-
-	echo ">>>> Archiving PRoot Distro plugin..."
-	mv --force "$PREFIX/etc/proot-distro/${NAME}.sh" "$ENGAGEMENT_DIR/${NAME}.plugin.sh"
 
 	echo ">>>> Archiving this control script..."
 	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
@@ -120,6 +128,8 @@ deleteEngagement () {
 	read -p "Please confirm by typing YES (all capitals): " CONFIRMATION
 
 	if [[ "$CONFIRMATION" == "YES" ]]; then
+		unNerfProotDistro
+
 		echo ">>>> Deleting PRoot data..."
 		proot-distro remove "$NAME"
 		rm --force $PREFIX/etc/proot-distro/{$NAME}.sh
@@ -149,6 +159,8 @@ backupEngagement () {
 #
 restoreEngagement () {
 	if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.tar" ]]; then
+		unNerfProotDistro
+
 		echo ">>>> Restoring environment..."
 		proot-distro restore "$ENGAGEMENT_DIR/Backups/$NAME.tar"
 
@@ -162,6 +174,8 @@ restoreEngagement () {
 # Helper function that actually performs the environment backup.
 #
 prootBackup () {
+	unNerfProotDistro
+
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
@@ -170,6 +184,22 @@ prootBackup () {
 	mkdir --parents "$BACKUP_DIR"
 	proot-distro backup --output "$BACKUP_FILE" "$NAME"
 	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
+}
+
+# PRoot Distro engages in some serious nannying around pentesting
+# distros. While I understand the Termux project's desire not to support
+# script-kiddies, and support their refusal to include hacking tools
+# (even if it makes my life harder), actively subverting user requests
+# is, in my opinion, a step too far.
+#
+#     https://github.com/termux/proot-distro/commit/470525c55020d72b66b509066b8d71d59b62072c
+#
+# Helper function to proactively un-nerf pentest capabilities (even
+# though we probably won't need that functionality ourselves in most
+# cases).
+#
+unNerfProotDistro () {
+	sed -i 's/if .*(kali|parrot|nethunter|blackarch).*; then/if false; then/' $(which proot-distro)
 }
 
 # Flow control.
