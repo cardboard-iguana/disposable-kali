@@ -84,16 +84,21 @@ startGUI () {
 	export DISPLAY=:0
 	export GALLIUM_DRIVER=virpipe
 	export MESA_GL_VERSION_OVERRIDE=4.0
+	export PULSE_SERVER=tcp:127.0.0.1
 
-	virgl_test_server_android &> /dev/null &
 	termux-x11 :0 &> /dev/null &
+	virgl_test_server_android &> /dev/null &
+	pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
 
 	unNerfProotDistro
 
 	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/gui.sh
 
-	pkill --full com.termux.x11
+	pkill --full pulseaudio
 	pkill --full virgl_test_server
+	pkill --full com.termux.x11
+
+	unset DISPLAY GALLIUM_DRIVER MESA_GL_VERSION_OVERRIDE PULSE_SERVER
 
 	rm --recursive --force $PREFIX/tmp/.X0-lock
 	rm --recursive --force $PREFIX/tmp/.X11-unix

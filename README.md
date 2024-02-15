@@ -72,9 +72,9 @@ termux-setup-storage
 ## Usage
 To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh` from inside of it.
 
-### Linux and macOS
-At the end of the process, the control script name will be provided and the script's `help` command will automatically run. In general:
+At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
 
+### Linux and macOS
 - `$CONTROL_SCRIPT start`: Start the engagement's container.
 - `$CONTROL_SCRIPT stop`: Stop the engagement's container.
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
@@ -85,4 +85,9 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
 
 ### Android
-Coming soon!
+- `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement environment.
+- `$CONTROL_SCRIPT desktop`: Start a desktop in the engagement environment. Use the Termux:X11 app to connect.
+- `$CONTROL_SCRIPT backup`: Backup the engagement environment in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
+- `$CONTROL_SCRIPT restore`: Replaces the current engagement environment with the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
+- `$CONTROL_SCRIPT archive`: Backup the engagement environment and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
+- `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.

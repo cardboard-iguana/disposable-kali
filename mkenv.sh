@@ -39,6 +39,7 @@ else
 	exit 2
 fi
 
+if [[ "$CODE_PATH" == "docker" ]]; then
 GOOD_PASSWORD="no"
 while [[ "$GOOD_PASSWORD" == "no" ]]; do
 	read -s -p "What password should be used for the non-root container user (not echoed)? " PASSWORD_ONE
@@ -54,6 +55,12 @@ while [[ "$GOOD_PASSWORD" == "no" ]]; do
 		echo ""
 	fi
 done
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	USER_PASS="********"
+else
+	echo "You should not be here."
+	exit 2
+fi
 
 # Determine build variables.
 #
@@ -78,7 +85,9 @@ echo "The following settings will be used:"
 echo ""
 echo "  Engagement Name: $ENGAGEMENT_NAME"
 echo "  User Name:       $USER_NAME"
-echo "  Password:        ********"
+if [[ "$CODE_PATH" == "docker" ]]; then
+	echo "  Password:        ********"
+fi
 echo "  Time Zone:       $TIMEZONE"
 echo ""
 echo "The following engagement objects will be created:"
@@ -180,9 +189,9 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 
 	proot-distro install "$NAME"
 
-	DISTRO_PREFIX="$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME"
-
-	proot-distro login "$NAME" -- bash -c "echo 'kali:${USER_PASS}' | chpasswd"
+	echo ""
+	echo "Please set the password for the non-root (kali) user..."
+	proot-distro login "$NAME" -- passwd kali
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 else
