@@ -15,6 +15,7 @@ distro_setup() {
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt full-upgrade --quiet --assume-yes --fix-broken
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes \
+		at-spi2-core \
 		burpsuite \
 		dialog \
 		flameshot \
@@ -32,6 +33,7 @@ distro_setup() {
 		metasploit-framework \
 		nano \
 		openssh-client \
+		pm-utils \
 		tmux \
 		xclip \
 		xorg
@@ -59,10 +61,12 @@ distro_setup() {
 	cp ./usr/bin/systemctl.sh ./usr/bin/systemctl
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive make-ssl-cert generate-default-snakeoil
+	chmod 600 ./etc/ssl/private/ssl-cert-snakeoil.key
 
 	touch ./root/.hushlogin
+	mkdir --parents ./root/.tmux
 
-	run_proot_cmd bash -c "msfdb init && /etc/init.d/postgresql stop"
+	run_proot_cmd bash -c "su postgres --command='pg_createcluster 16 main' && su postgres --command='/etc/init.d/postgresql start' && msfdb init && su postgres --command='/etc/init.d/postgresql stop'"
 
 	# Make sure that problematic services are disabled (power
 	# management, screen saver, etc.).
@@ -125,31 +129,18 @@ distro_setup() {
 
 	# Create startup scripts.
 	#
-	cat > ./usr/local/sbin/env-start.sh <<- EOF
-	#!/usr/bin/env bash
-
-	/etc/init.d/dbus start
-	/etc/init.d/postgresql start
-	EOF
-
-	cat > ./usr/local/sbin/env-stop.sh <<- EOF
-	#!/usr/bin/env bash
-
-	/etc/init.d/postgresql stop
-	/etc/init.d/dbus stop
-	EOF
-
-	chmod 755 ./usr/local/sbin/env-start.sh
-	chmod 755 ./usr/local/sbin/env-stop.sh
-
 	cat > ./usr/local/bin/tui.sh <<- EOF
 	#!/usr/bin/env bash
 
-	sudo /usr/local/sbin/env-start.sh
+	sudo -u postgres /etc/init.d/postgresql start
 
-	/usr/bin/env bash
+	export LANG=en_US.UTF-8
+	export SHELL=$(which zsh)
+	export TMUX_TMPDIR=$HOME/.tmux
 
-	sudo /usr/local/sbin/env-stop.sh
+	/usr/bin/env zsh
+
+	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
 
 	chmod 755 ./usr/local/bin/tui.sh
@@ -157,25 +148,29 @@ distro_setup() {
 	cat > ./usr/local/bin/gui.sh <<- EOF
 	#!/usr/bin/env bash
 
-	sudo /usr/local/sbin/env-start.sh
+	sudo -u postgres /etc/init.d/postgresql start
 
 	export DISPLAY=:0
 	export GALLIUM_DRIVER=virpipe
+	export LANG=en_US.UTF-8
 	export MESA_GL_VERSION_OVERRIDE=4.0
 	export PULSE_SERVER=tcp:127.0.0.1
+	export QT_QPA_PLATFORMTHEME=qt5ct
+	export SHELL=$(which zsh)
+	export TMUX_TMPDIR=$HOME/.tmux
 
 	dbus-launch --exit-with-session startxfce4
 
-	sudo /usr/local/sbin/env-stop.sh
+	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
 
 	chmod 755 ./usr/local/bin/gui.sh
 
 	# User setup.
 	#
-	run_proot_cmd usermod --append --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video kali
+	run_proot_cmd usermod --append --groups adm,audio,cdrom,dialout,dip,floppy,kali-trusted,netdev,plugdev,sudo,staff,users,video kali
 
-	echo "kali ALL=(ALL:ALL) ALL" > ./etc/sudoers.d/kali
+	echo "kali ALL=(ALL:ALL) NOPASSWD: ALL" > ./etc/sudoers.d/kali
 
 	# Home directory setup.
 	#
@@ -269,6 +264,8 @@ distro_setup() {
 	</map>
 	EOF
 
+	echo "set tabsize 4" > ./home/kali/.nanorc
+
 	mkdir -p ./home/kali/.ssh
 	cat > ./home/kali/.ssh/config <<- EOF
 	Host *
@@ -285,23 +282,7 @@ distro_setup() {
 	"\\eOB": history-search-forward
 	EOF
 
-	cat > ./home/kali/.bash_aliases <<- EOF
-	#!/usr/bin/env bash
-
-	export LANG=en_US.UTF-8
-
-	if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
-	    tmux list-sessions | grep \$(hostname) \\
-	                       | grep "(attached)" > /dev/null \\
-	                      || exec tmux -2 new-session -A -s \$(hostname)
-	fi
-	EOF
-
-	cat > ./home/kali/.xsessionrc <<- EOF
-	#!/usr/bin/env bash
-
-	export LANG=en_US.UTF-8
-	EOF
+	mkdir --parents ./home/kali/.tmux
 
 	cat > ./home/kali/.tmux.conf <<- EOF
 	set -g default-terminal "tmux-256color"
@@ -314,7 +295,27 @@ distro_setup() {
 	bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 	EOF
 
-	echo "set tabsize 4" > ./home/kali/.nanorc
+	cat > ./home/kali/.xsessionrc <<- EOF
+	#!/usr/bin/env bash
+
+	export LANG=en_US.UTF-8
+	export QT_QPA_PLATFORMTHEME=qt5ct
+	export SHELL=$(which zsh)
+	EOF
+
+	cat > ./home/kali/.zshenv <<- EOF
+	#!/usr/bin/env zsh
+
+	export LANG=en_US.UTF-8
+
+	if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
+	    tmux list-sessions | grep \$(hostname) \\
+	                       | grep "(attached)" > /dev/null \\
+	                      || exec tmux -2 new-session -A -s \$(hostname)
+	fi
+	EOF
+
+	ln -s ./home/kali/.zshenv ./home/kali/.bash_aliases
 
 	mkdir --parents ./home/kali/Documents
 

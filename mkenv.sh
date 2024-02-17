@@ -40,21 +40,21 @@ else
 fi
 
 if [[ "$CODE_PATH" == "docker" ]]; then
-GOOD_PASSWORD="no"
-while [[ "$GOOD_PASSWORD" == "no" ]]; do
-	read -s -p "What password should be used for the non-root container user (not echoed)? " PASSWORD_ONE
-	echo ""
-	read -s -p "Retype the password above to confirm (not echoed). " PASSWORD_TWO
-	echo ""
-	if [[ "$PASSWORD_ONE" == "$PASSWORD_TWO" ]]; then
-		USER_PASS="$PASSWORD_ONE"
-		GOOD_PASSWORD="yes"
-	else
+	GOOD_PASSWORD="no"
+	while [[ "$GOOD_PASSWORD" == "no" ]]; do
+		read -s -p "What password should be used for the non-root container user (not echoed)? " PASSWORD_ONE
 		echo ""
-		echo "Supplied passwords do not match!"
+		read -s -p "Retype the password above to confirm (not echoed). " PASSWORD_TWO
 		echo ""
-	fi
-done
+		if [[ "$PASSWORD_ONE" == "$PASSWORD_TWO" ]]; then
+			USER_PASS="$PASSWORD_ONE"
+			GOOD_PASSWORD="yes"
+		else
+			echo ""
+			echo "Supplied passwords do not match!"
+			echo ""
+		fi
+	done
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	USER_PASS="********"
 else

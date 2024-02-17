@@ -69,6 +69,10 @@ pkg install proot-distro pulseaudio termux-x11-nightly virglrenderer-android whi
 termux-setup-storage
 ```
 
+You will almost certainly want to enable Developer Mode and then set the following option to prevent desktop sessions from being unexpectedly killed:
+
+- Developer options → Apps → Disable child process restrictions → On
+
 ## Usage
 To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh` from inside of it.
 

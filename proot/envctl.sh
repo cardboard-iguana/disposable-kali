@@ -41,9 +41,10 @@ if [[ "$SANITY" == "0%" ]]; then
 	echo ""
 	exit 1
 elif [[ $(pgrep --full --count proot) -gt 0 ]]; then
-	echo "You can only run one engagement environment at a time."
+	echo "You can only run one engagement environment at a time. Currently running"
+	echo "proot instances:"
 	echo ""
-	echo "    $(pgrep --full --list-full proot)"
+	echo "    $(pgrep --full proot)"
 	echo ""
 	exit 1
 fi
@@ -71,21 +72,10 @@ scriptHelp () {
 startCLI () {
 	unNerfProotDistro
 
-	# Prevent nested host/guest tmux sessions.
-	#
-	if [[ -n "$TMUX" ]]; then
-		proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- env TMUX="TMUX" /usr/local/bin/tui.sh
-	else
-		proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/tui.sh
-	fi
+	proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/tui.sh
 }
 
 startGUI () {
-	export DISPLAY=:0
-	export GALLIUM_DRIVER=virpipe
-	export MESA_GL_VERSION_OVERRIDE=4.0
-	export PULSE_SERVER=tcp:127.0.0.1
-
 	termux-x11 :0 &> /dev/null &
 	virgl_test_server_android &> /dev/null &
 	pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
@@ -94,15 +84,20 @@ startGUI () {
 
 	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/gui.sh
 
+	pkill -9 dbus
+
 	pkill --full pulseaudio
 	pkill --full virgl_test_server
 	pkill --full com.termux.x11
 
-	unset DISPLAY GALLIUM_DRIVER MESA_GL_VERSION_OVERRIDE PULSE_SERVER
-
+	rm --recursive --force $PREFIX/tmp/dbus-*
+	rm --recursive --force $PREFIX/tmp/.ICE-unix
+	rm --recursive --force $PREFIX/tmp/*-kali
+	rm --recursive --force $PREFIX/tmp/*_kali
+	rm --recursive --force $PREFIX/tmp/pulse-*
+	rm --recursive --force $PREFIX/tmp/.virgl_test
 	rm --recursive --force $PREFIX/tmp/.X0-lock
 	rm --recursive --force $PREFIX/tmp/.X11-unix
-	rm --recursive --force $PREFIX/tmp/.virgl_test
 }
 
 # Archive engagement environment, PRoot Distro plugin, and control
