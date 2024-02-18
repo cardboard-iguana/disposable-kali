@@ -71,6 +71,7 @@ export DEBIAN_FRONTEND=noninteractive
 make-ssl-cert generate-default-snakeoil
 
 touch /root/.hushlogin
+touch /var/lib/postgresql/.hushlogin
 
 msfdb init
 /etc/init.d/postgresql stop

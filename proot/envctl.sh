@@ -44,7 +44,7 @@ elif [[ $(pgrep --full --count proot) -gt 0 ]]; then
 	echo "You can only run one engagement environment at a time. Currently running"
 	echo "proot instances:"
 	echo ""
-	echo "    $(pgrep --full proot)"
+	pgrep --full proot
 	echo ""
 	exit 1
 fi
@@ -104,7 +104,10 @@ startGUI () {
 # script in ENGAGEMENT_DIR.
 #
 archiveEngagement () {
+	unNerfProotDistro
+
 	prootBackup
+	prootRemove
 
 	echo ">>>> Archiving this control script..."
 	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
@@ -121,7 +124,7 @@ deleteEngagement () {
 	echo "following objects will be deleted:"
 	echo ""
 	echo "  PRoot Directory:      $DISTRO_ROOT"
-	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/{$NAME}.sh"
+	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/${NAME}.sh"
 	echo "  Engagement Directory: $ENGAGEMENT_DIR"
 	echo "  Control Script:       $SCRIPT"
 	echo ""
@@ -129,10 +132,8 @@ deleteEngagement () {
 
 	if [[ "$CONFIRMATION" == "YES" ]]; then
 		unNerfProotDistro
+		prootRemove
 
-		echo ">>>> Deleting PRoot data..."
-		proot-distro remove "$NAME"
-		rm --force $PREFIX/etc/proot-distro/{$NAME}.sh
 		echo ">>>> Deleting engagement directory..."
 		rm --recursive --force "$ENGAGEMENT_DIR"
 		echo ">>>> Deleting this control script..."
@@ -149,41 +150,40 @@ deleteEngagement () {
 # Back up the engagement environment in ENGAGEMENT_DIR.
 #
 backupEngagement () {
+	unNerfProotDistro
 	prootBackup
-
-	echo ""
-	echo "Engagement $NAME has been backed up in $BACKUP_DIR."
 }
 
 # Restore from the most recent backup.
 #
 restoreEngagement () {
-	if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.tar" ]]; then
+	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | wc -l) -gt 0 ]]; then
 		unNerfProotDistro
 
-		echo ">>>> Restoring environment..."
-		proot-distro restore "$ENGAGEMENT_DIR/Backups/$NAME.tar"
+		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | sort | tail -1)"
 
-		echo ""
-		echo "Engagement $NAME has been restored from the backup at $ENGAGEMENT_DIR/Backups/$NAME.tar."
+		proot-distro restore "$RESTORE_TARGET"
 	else
-		echo "No backup found at $ENGAGEMENT_DIR/Backups/$NAME.tar!"
+		echo "No backups found in $ENGAGEMENT_DIR/Backups!"
 	fi
 }
 
 # Helper function that actually performs the environment backup.
 #
 prootBackup () {
-	unNerfProotDistro
-
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
 
-	echo ">>>> Backing up PRoot environment..."
 	mkdir --parents "$BACKUP_DIR"
 	proot-distro backup --output "$BACKUP_FILE" "$NAME"
-	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
+}
+
+# Helper function that removes PRoot data.
+#
+prootRemove () {
+	proot-distro remove "$NAME"
+	rm --force $PREFIX/etc/proot-distro/${NAME}.sh
 }
 
 # PRoot Distro engages in some serious nannying around pentesting

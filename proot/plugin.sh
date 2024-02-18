@@ -64,9 +64,8 @@ distro_setup() {
 	chmod 600 ./etc/ssl/private/ssl-cert-snakeoil.key
 
 	touch ./root/.hushlogin
+	touch ./var/lib/postgresql/.hushlogin
 	mkdir --parents ./root/.tmux
-
-	run_proot_cmd bash -c "su postgres --command='pg_createcluster 16 main' && su postgres --command='/etc/init.d/postgresql start' && msfdb init && su postgres --command='/etc/init.d/postgresql stop'"
 
 	# Make sure that problematic services are disabled (power
 	# management, screen saver, etc.).
@@ -135,8 +134,8 @@ distro_setup() {
 	sudo -u postgres /etc/init.d/postgresql start
 
 	export LANG=en_US.UTF-8
-	export SHELL=$(which zsh)
-	export TMUX_TMPDIR=$HOME/.tmux
+	export SHELL=\$(which zsh)
+	export TMUX_TMPDIR=\$HOME/.tmux
 
 	/usr/bin/env zsh
 
@@ -156,8 +155,8 @@ distro_setup() {
 	export MESA_GL_VERSION_OVERRIDE=4.0
 	export PULSE_SERVER=tcp:127.0.0.1
 	export QT_QPA_PLATFORMTHEME=qt5ct
-	export SHELL=$(which zsh)
-	export TMUX_TMPDIR=$HOME/.tmux
+	export SHELL=\$(which zsh)
+	export TMUX_TMPDIR=\$HOME/.tmux
 
 	dbus-launch --exit-with-session startxfce4
 
@@ -293,14 +292,6 @@ distro_setup() {
 	set-option -s set-clipboard off
 	bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 	bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-	EOF
-
-	cat > ./home/kali/.xsessionrc <<- EOF
-	#!/usr/bin/env bash
-
-	export LANG=en_US.UTF-8
-	export QT_QPA_PLATFORMTHEME=qt5ct
-	export SHELL=$(which zsh)
 	EOF
 
 	cat > ./home/kali/.zshenv <<- EOF
