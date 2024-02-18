@@ -185,7 +185,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	TARBALL_SHA256="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
 	BUILD_DATE="$(date)"
 
-	sed "s|{{distro-name}}|$ENGAGEMENT_NAME|;s|{{build-date}}|$DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.sh"
+	sed "s|{{distro-name}}|$ENGAGEMENT_NAME|;s|{{build-date}}|$BUILD_DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.sh"
 
 	proot-distro install "$NAME"
 
