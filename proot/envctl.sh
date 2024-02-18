@@ -183,7 +183,6 @@ prootBackup () {
 #
 prootRemove () {
 	proot-distro remove "$NAME"
-	rm --force $PREFIX/etc/proot-distro/${NAME}.override.sh
 }
 
 # PRoot Distro engages in some serious nannying around pentesting
