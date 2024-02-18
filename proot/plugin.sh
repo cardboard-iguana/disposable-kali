@@ -173,60 +173,6 @@ distro_setup() {
 
 	# Home directory setup.
 	#
-	touch ./home/kali/.hushlogin
-
-	mkdir --parents ./home/kali/.config/autostart
-
-	cat > ./home/kali/.config/autostart/set-flameshot-selection-shortcut.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Set Flameshot selected area screenshot shortcut
-	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path ./home/kali/Desktop"
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
-	cat > ./home/kali/.config/autostart/set-flameshot-desktop-shortcut.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Set Flameshot full desktop screenshot shortcut
-	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
-	cat > ./home/kali/.config/autostart/set-session-name.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable session autosave
-	Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
-	cat > ./home/kali/.config/autostart/disable-session-autosave.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable session autosave
-	Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
-	cat > ./home/kali/.config/autostart/disable-session-save-on-exit.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable session autosave
-	Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
 	mkdir --parents ./home/kali/.BurpSuite
 	cat > ./home/kali/.BurpSuite/UserConfigCommunity.json <<- EOF
 	{
@@ -253,6 +199,68 @@ distro_setup() {
 	}
 	EOF
 
+	mkdir --parents ./home/kali/.config/autostart
+
+	cat > ./home/kali/.config/autostart/disable-session-autosave.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable session autosave
+	Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/disable-session-save-on-exit.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable session autosave
+	Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/set-flameshot-desktop-shortcut.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Set Flameshot full desktop screenshot shortcut
+	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/set-flameshot-selection-shortcut.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Set Flameshot selected area screenshot shortcut
+	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path ./home/kali/Desktop"
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/set-session-name.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable session autosave
+	Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	touch ./home/kali/.hushlogin
+
+	cat > ./home/kali/.inputrc <<- EOF
+	"\\e[A": history-search-backward
+	"\\eOA": history-search-backward
+
+	"\\e[B": history-search-forward
+	"\\eOB": history-search-forward
+	EOF
+
 	mkdir --parents ./home/kali/.java/.userPrefs/burp
 	head --lines -1 ./etc/skel/.java/.userPrefs/burp/prefs.xml > ./home/kali/.java/.userPrefs/burp/prefs.xml
 	cat >> ./home/kali/.java/.userPrefs/burp/prefs.xml <<- EOF
@@ -272,14 +280,6 @@ distro_setup() {
 	EOF
 	chmod 700 ./home/kali/.ssh
 	chmod 600 ./home/kali/.ssh/*
-
-	cat > ./home/kali/.inputrc <<- EOF
-	"\\e[A": history-search-backward
-	"\\eOA": history-search-backward
-
-	"\\e[B": history-search-forward
-	"\\eOB": history-search-forward
-	EOF
 
 	mkdir --parents ./home/kali/.tmux
 
