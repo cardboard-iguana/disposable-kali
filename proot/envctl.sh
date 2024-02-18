@@ -124,7 +124,7 @@ deleteEngagement () {
 	echo "following objects will be deleted:"
 	echo ""
 	echo "  PRoot Directory:      $DISTRO_ROOT"
-	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/${NAME}.sh"
+	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/${NAME}.override.sh"
 	echo "  Engagement Directory: $ENGAGEMENT_DIR"
 	echo "  Control Script:       $SCRIPT"
 	echo ""
@@ -183,7 +183,7 @@ prootBackup () {
 #
 prootRemove () {
 	proot-distro remove "$NAME"
-	rm --force $PREFIX/etc/proot-distro/${NAME}.sh
+	rm --force $PREFIX/etc/proot-distro/${NAME}.override.sh
 }
 
 # PRoot Distro engages in some serious nannying around pentesting
