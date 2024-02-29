@@ -74,7 +74,7 @@ You will almost certainly want to enable Developer Mode and then set the followi
 - Developer options → Apps → Disable child process restrictions → On
 
 ## Usage
-To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh` from inside of it.
+To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
 
 At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
 

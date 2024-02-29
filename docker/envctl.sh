@@ -216,7 +216,7 @@ removeContainerImagePair () {
 # Helper function that sleeps briefly.
 #
 waitForIt () {
-	SECONDS=10
+	SECONDS=11
 	echo -n ">>>> Sleeping briefly"
 	for STEP in $(seq 1 $SECONDS); do
 		sleep 1

@@ -26,10 +26,17 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 	exit 1
 fi
 
+# An engagement name must be supplied.
+#
+if [[ -n "$1" ]]; then
+	NAME="$(echo -n "$1" | tr -c -s '[:alnum:]_-' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^[_-]\+//;s/[_-]\+$//')"
+else
+	echo "You must supply an engagement name as this script's first (and only) parameter!"
+	exit 1
+fi
+
 # Gather engagement information.
 #
-read -p "What is the engagement name? " ENGAGEMENT_NAME
-
 if [[ "$CODE_PATH" == "docker" ]]; then
 	USER_NAME="$USER"
 elif [[ "$CODE_PATH" == "proot" ]]; then
@@ -42,9 +49,9 @@ fi
 if [[ "$CODE_PATH" == "docker" ]]; then
 	GOOD_PASSWORD="no"
 	while [[ "$GOOD_PASSWORD" == "no" ]]; do
-		read -s -p "What password should be used for the non-root container user (not echoed)? " PASSWORD_ONE
+		read -s -p "What password should be used for the non-root container user (not echoed): " PASSWORD_ONE
 		echo ""
-		read -s -p "Retype the password above to confirm (not echoed). " PASSWORD_TWO
+		read -s -p "Retype the password above to confirm (not echoed): " PASSWORD_TWO
 		echo ""
 		if [[ "$PASSWORD_ONE" == "$PASSWORD_TWO" ]]; then
 			USER_PASS="$PASSWORD_ONE"
@@ -64,7 +71,6 @@ fi
 
 # Determine build variables.
 #
-NAME="$(echo -n "$ENGAGEMENT_NAME" | tr -c -s '[:alnum:]_-' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^[_-]\+//;s/[_-]\+$//')"
 SCRIPT="$HOME/.local/bin/${NAME}.sh"
 
 if [[ "$CODE_PATH" == "docker" ]]; then
@@ -83,7 +89,7 @@ fi
 echo ""
 echo "The following settings will be used:"
 echo ""
-echo "  Engagement Name: $ENGAGEMENT_NAME"
+echo "  Engagement Name: $NAME"
 echo "  User Name:       $USER_NAME"
 if [[ "$CODE_PATH" == "docker" ]]; then
 	echo "  Password:        ********"
@@ -105,11 +111,12 @@ echo "  Control Script:       $SCRIPT"
 echo ""
 read -n 1 -p "Is this correct? (y/N) " CONFIRMATION
 echo ""
-echo ""
 
 if [[ ! "$CONFIRMATION" =~ ^[yY]$ ]]; then
 	echo "Engagement creation aborted."
 	exit
+else
+	echo ""
 fi
 
 # Create necessary directories.
@@ -185,7 +192,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	TARBALL_SHA256="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
 	BUILD_DATE="$(date)"
 
-	sed "s|{{distro-name}}|$ENGAGEMENT_NAME|;s|{{build-date}}|$BUILD_DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.override.sh"
+	sed "s|{{distro-name}}|$NAME|;s|{{build-date}}|$BUILD_DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.override.sh"
 
 	proot-distro install "$NAME"
 
