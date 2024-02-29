@@ -80,6 +80,7 @@ distro_setup() {
 	sed -i 's|^exec --no-startup-id /usr/bin/pulseaudio|#exec --no-startup-id /usr/bin/pulseaudio|'                       ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 	sed -i 's|^exec --no-startup-id /usr/bin/xfce4-power-manager|exec --no-startup-id /usr/bin/xfce4-power-manager|'      ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 	sed -i 's|^exec --no-startup-id /usr/bin/nitrogen --restore|exec_always --no-startup-id /usr/bin/nitrogen --restore|' ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
+	sed -i 's|^exec_always --no-startup-id /usr/bin/picom --no-use-damage|exec_always --no-startup-id /usr/bin/picom|'    ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 
 	sed -i 's/Mod4/Mod1/' ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
 	cat >> ./usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf <<- EOF
@@ -128,6 +129,7 @@ distro_setup() {
 	sudo sed -i 's|^exec --no-startup-id /usr/bin/pulseaudio|#exec --no-startup-id /usr/bin/pulseaudio|'                       /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 	sudo sed -i 's|^exec --no-startup-id /usr/bin/xfce4-power-manager|exec --no-startup-id /usr/bin/xfce4-power-manager|'      /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 	sudo sed -i 's|^exec --no-startup-id /usr/bin/nitrogen --restore|exec_always --no-startup-id /usr/bin/nitrogen --restore|' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
+	sudo sed -i 's|^exec_always --no-startup-id /usr/bin/picom --no-use-damage|exec_always --no-startup-id /usr/bin/picom|'    /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
 
 	sudo sed -i 's/Mod4/Mod1/' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
 	if [[ \$(grep -c "## Chromebook fixes:" /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf) -eq 0 ]]; then
