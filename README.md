@@ -51,6 +51,7 @@ apt install freerdp2-x11
 
 ### Android
 - [Termux](https://f-droid.org/en/packages/com.termux/)
+- [Termux Activity Manager](https://github.com/termux/TermuxAm)
 - [Termux:X11](https://github.com/termux/termux-x11)
 
 A couple of Termux packages are also required:
@@ -62,7 +63,7 @@ pkg install x11-repo
 
 # Install required packages.
 #
-pkg install proot-distro pulseaudio termux-x11-nightly virglrenderer-android which
+pkg install proot-distro pulseaudio termux-am termux-x11-nightly virglrenderer-android which
 
 # Enable access to device storage.
 #
