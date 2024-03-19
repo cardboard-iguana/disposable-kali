@@ -1,15 +1,27 @@
 FROM kalilinux/kali-rolling
 
-# Install applications
+# Configure APT
+#
+RUN <<EOF
+echo 'APT::Install-Recommends "false";' >  /etc/apt/apt.conf.d/minimal-installs
+echo 'APT::Install-Suggests "false";'   >> /etc/apt/apt.conf.d/minimal-installs
+EOF
+
+# Make sure that base system is sane
 #
 RUN <<EOF
 export DEBIAN_FRONTEND=noninteractive
 
-echo 'APT::Install-Recommends "false";' >  /etc/apt/apt.conf.d/minimal-installs
-echo 'APT::Install-Suggests "false";'   >> /etc/apt/apt.conf.d/minimal-installs
-
 apt update       --quiet --assume-yes --fix-missing
 apt full-upgrade --quiet --assume-yes --fix-broken
+
+unset DEBIAN_FRONTEND
+EOF
+
+# Install applications
+#
+RUN <<EOF
+export DEBIAN_FRONTEND=noninteractive
 
 apt install --quiet --assume-yes \
     burpsuite \
@@ -34,22 +46,35 @@ apt install --quiet --assume-yes \
     xorgxrdp \
     xrdp
 
+unset DEBIAN_FRONTEND
+EOF
+
+# Clean up installation
+#
+RUN <<EOF
+export DEBIAN_FRONTEND=noninteractive
+
 apt autoremove --quiet --assume-yes --purge --autoremove
 apt clean      --quiet --assume-yes
 
 unset DEBIAN_FRONTEND
 EOF
 
-# System configuration
+# Make sure locale is built
 #
 RUN <<EOF
 sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
 EOF
 
-RUN --mount=type=secret,id=TIMEZONE \
-      ln --symbolic --force /usr/share/zoneinfo/$(cat /run/secrets/TIMEZONE) /etc/localtime
+# Set time zone
+#
+RUN --mount=type=secret,id=TIMEZONE <<EOF
+ln --symbolic --force /usr/share/zoneinfo/$(cat /run/secrets/TIMEZONE) /etc/localtime
+EOF
 
+# Hack systemctl so that it "works", since some scripts hard-code this
+#
 RUN <<EOF
 mv /usr/bin/systemctl /usr/bin/systemctl.bin
 
@@ -63,18 +88,28 @@ chmod 755 /usr/bin/systemctl.sh
 cp /usr/bin/systemctl.sh /usr/bin/systemctl
 EOF
 
+# Hush various logins
+#
+RUN <<EOF
+touch /root/.hushlogin
+touch /var/lib/postgresql/.hushlogin
+EOF
+
+# Generate local self-signed certificate (for PostgreSQL)
+#
 RUN <<EOF
 export DEBIAN_FRONTEND=noninteractive
 
 make-ssl-cert generate-default-snakeoil
 
-touch /root/.hushlogin
-touch /var/lib/postgresql/.hushlogin
+unset DEBIAN_FRONTEND
+EOF
 
+# Init Metasploit database
+#
+RUN <<EOF
 msfdb init
 /etc/init.d/postgresql stop
-
-unset DEBIAN_FRONTEND
 EOF
 
 # Make sure that problematic services are disabled (power management,
@@ -125,20 +160,14 @@ EOF
 # Fix scroll on macOS
 #
 RUN --mount=type=secret,id=IS_MACOS <<EOF
-export IS_MACOS="$(cat /run/secrets/IS_MACOS)"
-
-if [ "$IS_MACOS" = "yes" ]; then
+if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
     sed -i 's/^\[SessionVariables\]$/\[SessionVariables\]\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
 fi
-
-unset IS_MACOS
 EOF
 
 # Create update script (useful for long-running containiners)
 #
 RUN --mount=type=secret,id=IS_MACOS <<EOF
-export IS_MACOS="$(cat /run/secrets/IS_MACOS)"
-
 cat > /usr/local/bin/update.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -189,7 +218,7 @@ sudo sed -i "s%/usr/bin/systemctl reboot%/usr/bin/i3-msg restart%"              
 
 SCRIPT
 
-if [ "$IS_MACOS" = "yes" ]; then
+if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
 cat >> /usr/local/bin/update.sh << SCRIPT
 if [[ \$(grep -Ec '^XRDP_XORG_TOUCHPAD_SCROLL_HACK=yes$' /etc/xrdp/sesman.ini) -eq 0 ]]; then
     sudo sed -i 's/^\[SessionVariables\]$/\[SessionVariables\]\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
@@ -215,8 +244,6 @@ CONF
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
-
-unset IS_MACOS
 EOF
 
 # Create Docker startup script
@@ -239,6 +266,8 @@ chown --recursive $USER_NAME:$USER_NAME /home/$USER_NAME
 SCRIPT
 
 chmod 755 /usr/local/sbin/docker-init.sh
+
+unset USER_NAME
 EOF
 
 # Create our normal user
