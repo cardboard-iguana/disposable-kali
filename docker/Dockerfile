@@ -26,6 +26,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt install --quiet --assume-yes \
     burpsuite \
     dialog \
+    flameshot \
     fonts-droid-fallback \
     fonts-liberation \
     fonts-liberation-sans-narrow \
@@ -36,12 +37,13 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-core \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
-    kali-desktop-i3 \
+    kali-desktop-xfce \
     metasploit-framework \
     nano \
     openssh-client \
     openvpn \
     tmux \
+    xclip \
     xorg \
     xorgxrdp \
     xrdp
@@ -116,45 +118,14 @@ EOF
 # screen saver, etc.)
 #
 RUN <<EOF
+rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
 rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
+rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
 sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-EOF
-
-# i3 Configuration tweaks
-#
-RUN <<EOF
-sed -i 's|^exec --no-startup-id /usr/bin/xrandr|#exec --no-startup-id /usr/bin/xrandr|'                               /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sed -i 's|^exec --no-startup-id /usr/bin/nm-applet|#exec --no-startup-id /usr/bin/nm-applet|'                         /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sed -i 's|^exec --no-startup-id /usr/bin/pulseaudio|#exec --no-startup-id /usr/bin/pulseaudio|'                       /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sed -i 's|^exec --no-startup-id /usr/bin/xfce4-power-manager|exec --no-startup-id /usr/bin/xfce4-power-manager|'      /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sed -i 's|^exec --no-startup-id /usr/bin/nitrogen --restore|exec_always --no-startup-id /usr/bin/nitrogen --restore|' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sed -i 's|^exec_always --no-startup-id /usr/bin/picom --no-use-damage|exec_always --no-startup-id /usr/bin/picom|'    /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-
-sed -i 's/Mod4/Mod1/' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-cat >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf << CONF
-
-## Chromebook fixes:
-bindsym \$mod+Next focus down
-bindsym \$mod+Prior focus up
-bindsym \$mod+Shift+Next move down
-bindsym \$mod+Shift+Prior move up
-CONF
-
-sed -i 's/^background_opacity 1.0/background_opacity 0.9/'      /usr/share/i3-dotfiles/etc/skel/.config/kitty/config.d/appearance.conf
-
-sed -i 's/^active-opacity = 0.9;/active-opacity = 1.0;/'        /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-sed -i 's/^backend = "glx";/backend = "xrender";/'              /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-sed -i 's/^blur-method = "dual_kawase";/blur-method = "none";/' /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-
-sed -i 's/^modules-right       = .*/modules-right       = powermenu/' /usr/share/i3-dotfiles/etc/skel/.config/polybar/config.ini
-
-sed -i "s%^reboot='\(.\+\) Reboot'%reboot='\1 Restart i3'%"                 /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
-sed -i 's%echo -e ".\+" | rofi_cmd%echo -e "$logout\\n$reboot" | rofi_cmd%' /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
-sed -i "s%/usr/bin/systemctl reboot%/usr/bin/i3-msg restart%"               /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
 EOF
 
 # Fix scroll on macOS
@@ -180,41 +151,14 @@ sudo apt clean
 
 sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
 
+sudo rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
 sudo rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
+sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
 sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-
-sudo sed -i 's|^exec --no-startup-id /usr/bin/xrandr|#exec --no-startup-id /usr/bin/xrandr|'                               /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sudo sed -i 's|^exec --no-startup-id /usr/bin/nm-applet|#exec --no-startup-id /usr/bin/nm-applet|'                         /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sudo sed -i 's|^exec --no-startup-id /usr/bin/pulseaudio|#exec --no-startup-id /usr/bin/pulseaudio|'                       /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sudo sed -i 's|^exec --no-startup-id /usr/bin/xfce4-power-manager|exec --no-startup-id /usr/bin/xfce4-power-manager|'      /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sudo sed -i 's|^exec --no-startup-id /usr/bin/nitrogen --restore|exec_always --no-startup-id /usr/bin/nitrogen --restore|' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-sudo sed -i 's|^exec_always --no-startup-id /usr/bin/picom --no-use-damage|exec_always --no-startup-id /usr/bin/picom|'    /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/execs.conf
-
-sudo sed -i 's/Mod4/Mod1/' /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-if [[ \$(grep -c "## Chromebook fixes:" /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf) -eq 0 ]]; then
-    sudo echo ""                                   >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-    sudo echo "## Chromebook fixes:"               >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-    sudo echo "bindsym \$mod+Next focus down"      >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-    sudo echo "bindsym \$mod+Prior focus up"       >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-    sudo echo "bindsym \$mod+Shift+Next move down" >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-    sudo echo "bindsym \$mod+Shift+Prior move up"  >> /usr/share/i3-dotfiles/etc/skel/.config/i3/config.d/keybinds.conf
-fi
-
-sudo sed -i 's/^background_opacity 1.0/background_opacity 0.9/'      /usr/share/i3-dotfiles/etc/skel/.config/kitty/config.d/appearance.conf
-
-sudo sed -i 's/^active-opacity = 0.9;/active-opacity = 1.0;/'        /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-sudo sed -i 's/^backend = "glx";/backend = "xrender";/'              /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-sudo sed -i 's/^blur-method = "dual_kawase";/blur-method = "none";/' /usr/share/i3-dotfiles/etc/skel/.config/picom/picom.conf
-
-sudo sed -i 's/^modules-right       = .*/modules-right       = powermenu/' /usr/share/i3-dotfiles/etc/skel/.config/polybar/config.ini
-
-sudo sed -i "s%^reboot='\(.\+\) Reboot'%reboot='\1 Restart i3'%"                   /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
-sudo sed -i 's%echo -e ".\+" | rofi_cmd%echo -e "\$logout\\n\$reboot" | rofi_cmd%' /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
-sudo sed -i "s%/usr/bin/systemctl reboot%/usr/bin/i3-msg restart%"                 /usr/share/i3-dotfiles/etc/skel/.config/rofi/scripts/powermenu
 
 SCRIPT
 
@@ -228,8 +172,7 @@ SCRIPT
 fi
 
 cat >> /usr/local/bin/update.sh << SCRIPT
-cp --archive --force --no-target-directory /etc/skel                       \$HOME
-cp --archive --force --no-target-directory /usr/share/i3-dotfiles/etc/skel \$HOME
+cp --archive --force --no-target-directory /etc/skel \$HOME
 
 ln --symbolic --force \$HOME/.face \$HOME/.face.icon
 
@@ -282,6 +225,8 @@ useradd --create-home \
 
 echo "${USER_NAME}:$(cat /run/secrets/USER_PASS)" | chpasswd
 
+echo "$USER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER_NAME
+
 unset USER_NAME
 EOF
 
@@ -291,10 +236,22 @@ RUN --mount=type=secret,id=USER_NAME <<EOF
 export USER_NAME="$(cat /run/secrets/USER_NAME)"
 export USER_HOME="/home/$USER_NAME"
 
-cp --archive --force --no-target-directory /etc/skel                       $USER_HOME
-cp --archive --force --no-target-directory /usr/share/i3-dotfiles/etc/skel $USER_HOME
+cp --archive --force --no-target-directory /etc/skel $USER_HOME
 
-touch $USER_HOME/.hushlogin
+cat > $USER_HOME/.bash_aliases << CONF
+#!/usr/bin/env bash
+
+export LANG=en_US.UTF-8
+
+if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
+    if [[ \$(tmux list-sessions 2> /dev/null | grep -vc "(attached)") -eq 0 ]]; then
+        exec tmux -2 new-session
+    else
+        exec tmux -2 attach-session
+    fi
+fi
+alias ntterm="qterminal &> /dev/null & disown"
+CONF
 
 mkdir --parents $USER_HOME/.BurpSuite
 cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
@@ -322,6 +279,68 @@ cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
 }
 CONF
 
+mkdir --parents $USER_HOME/.config/autostart
+
+cat > $USER_HOME/.config/autostart/disable-session-autosave.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable session autosave
+Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable session autosave
+Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Set Flameshot full desktop screenshot shortcut
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path $USER_HOME/Desktop"
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/set-flameshot-selection-shortcut.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Set Flameshot selected area screenshot shortcut
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path $USER_HOME/Desktop"
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/set-session-name.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable session autosave
+Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+touch $USER_HOME/.hushlogin
+
+cat > $USER_HOME/.inputrc << CONF
+"\\e[A": history-search-backward
+"\\eOA": history-search-backward
+
+"\\e[B": history-search-forward
+"\\eOB": history-search-forward
+CONF
+
 mkdir --parents $USER_HOME/.java/.userPrefs/burp
 head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > $USER_HOME/.java/.userPrefs/burp/prefs.xml
 cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
@@ -332,6 +351,7 @@ cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
 </map>
 CONF
 
+echo "set tabsize 4" > $USER_HOME/.nanorc
 
 mkdir -p $USER_HOME/.ssh
 cat > $USER_HOME/.ssh/config << CONF
@@ -340,35 +360,6 @@ Host *
 CONF
 chmod 700 $USER_HOME/.ssh
 chmod 600 $USER_HOME/.ssh/*
-
-cat > $USER_HOME/.inputrc << CONF
-"\\e[A": history-search-backward
-"\\eOA": history-search-backward
-
-"\\e[B": history-search-forward
-"\\eOB": history-search-forward
-CONF
-
-cat > $USER_HOME/.bash_aliases << CONF
-#!/usr/bin/env bash
-
-export LANG=en_US.UTF-8
-
-if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
-    if [[ \$(tmux list-sessions 2> /dev/null | grep -vc "(attached)") -eq 0 ]]; then
-        exec tmux -2 new-session
-    else
-        exec tmux -2 attach-session
-    fi
-fi
-alias ntterm="kitty &> /dev/null & disown"
-CONF
-
-cat > $USER_HOME/.xsessionrc << CONF
-#!/usr/bin/env bash
-
-export LANG=en_US.UTF-8
-CONF
 
 cat > $USER_HOME/.tmux.conf << CONF
 set -g default-terminal "tmux-256color"
@@ -381,7 +372,11 @@ bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xc
 bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 CONF
 
-echo "set tabsize 4" > $USER_HOME/.nanorc
+cat > $USER_HOME/.xsessionrc << CONF
+#!/usr/bin/env bash
+
+export LANG=en_US.UTF-8
+CONF
 
 mkdir --parents $USER_HOME/Documents
 
