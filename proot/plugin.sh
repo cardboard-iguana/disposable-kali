@@ -17,6 +17,7 @@ distro_setup() {
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes \
 		at-spi2-core \
 		burpsuite \
+		code-oss \
 		dialog \
 		flameshot \
 		fonts-droid-fallback \
@@ -32,6 +33,7 @@ distro_setup() {
 		kali-desktop-xfce \
 		metasploit-framework \
 		nano \
+		npm \
 		openssh-client \
 		pm-utils \
 		tmux \
@@ -80,6 +82,11 @@ distro_setup() {
 	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' ./etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"+lock-screen"/"-lock-screen"/'                          ./etc/xdg/xfce4/panel/default.xml
 
+	# Fix VS Code .desktop files
+	#
+	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
+
 	# Create update script (useful for long-running environments)
 	#
 	cat > ./usr/local/bin/update.sh <<- EOF
@@ -98,6 +105,9 @@ distro_setup() {
 	sudo rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
 	sudo rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
 	sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
+
+	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
 
 	sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 	sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
@@ -245,6 +255,9 @@ distro_setup() {
 	Terminal=false
 	Hidden=false
 	EOF
+
+	mkdir --parents ./home/kali/.config/"Code - OSS"/User
+	echo '{"window.titleBarStyle":"custom"}' > ./home/kali/.config/"Code - OSS"/User/settings.json
 
 	touch ./home/kali/.hushlogin
 

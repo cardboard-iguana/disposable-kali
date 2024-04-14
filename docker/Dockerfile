@@ -25,6 +25,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt install --quiet --assume-yes \
     burpsuite \
+    code-oss \
     dialog \
     flameshot \
     fonts-droid-fallback \
@@ -40,6 +41,7 @@ apt install --quiet --assume-yes \
     kali-desktop-xfce \
     metasploit-framework \
     nano \
+    npm \
     openssh-client \
     openvpn \
     tmux \
@@ -136,6 +138,13 @@ if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
 fi
 EOF
 
+# Fix VS Code .desktop files
+#
+RUN <<EOF
+sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
+EOF
+
 # Create update script (useful for long-running containiners)
 #
 RUN --mount=type=secret,id=IS_MACOS <<EOF
@@ -159,6 +168,9 @@ sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg
 sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
+
+sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
 
 SCRIPT
 
@@ -330,6 +342,9 @@ StartupNotify=false
 Terminal=false
 Hidden=false
 AUTOSTART
+
+mkdir --parents "$USER_HOME/.config/Code - OSS/User"
+echo '{"window.titleBarStyle":"custom"}' > "$USER_HOME/.config/Code - OSS/User/settings.json"
 
 touch $USER_HOME/.hushlogin
 
