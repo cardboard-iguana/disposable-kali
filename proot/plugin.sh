@@ -325,6 +325,8 @@ distro_setup() {
 	    fi
 	fi
 	alias ntterm="qterminal &> /dev/null & disown"
+
+	[[ -f /tmp/okc-ssh-agent.env ]] && source /tmp/okc-ssh-agent.env
 	EOF
 
 	ln --symbolic --force .zshenv ./home/kali/.bash_aliases
