@@ -38,7 +38,8 @@ distro_setup() {
 		pm-utils \
 		tmux \
 		xclip \
-		xorg
+		xorg \
+		yarnpkg
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt autoremove --quiet --assume-yes --purge --autoremove
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt clean      --quiet --assume-yes
@@ -70,6 +71,9 @@ distro_setup() {
 	mkdir --parents ./root/.tmux
 
 	chmod u+s ./usr/bin/sudo
+
+	mkdir --parents ./usr/local/bin
+	run_proot_cmd ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
 
 	# Make sure that problematic services are disabled (power
 	# management, screen saver, etc.)

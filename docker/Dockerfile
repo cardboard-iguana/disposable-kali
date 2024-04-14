@@ -48,7 +48,8 @@ apt install --quiet --assume-yes \
     xclip \
     xorg \
     xorgxrdp \
-    xrdp
+    xrdp \
+    yarnpkg
 
 unset DEBIAN_FRONTEND
 EOF
@@ -146,6 +147,13 @@ sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications
 
 sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
 sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
+EOF
+
+# Some things expect a `yarn` command, rather than `yarnpkg`
+#
+RUN <<EOF
+mkdir --parents /usr/local/bin
+ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
 EOF
 
 # Create update script (useful for long-running containiners)
