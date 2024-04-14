@@ -124,6 +124,8 @@ fi
 mkdir --parents "$ENGAGEMENT_DIR"
 mkdir --parents "$HOME/.local/bin"
 
+# Build container/proot.
+#
 if [[ "$CODE_PATH" == "docker" ]]; then
 	# Build Docker container.
 	#
