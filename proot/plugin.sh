@@ -165,7 +165,7 @@ distro_setup() {
 	export DISPLAY=:0
 	export GALLIUM_DRIVER=virpipe
 	export LANG=en_US.UTF-8
-	export MESA_GL_VERSION_OVERRIDE=4.0
+	export MESA_GL_VERSION_OVERRIDE=4.5
 	export PULSE_SERVER=tcp:127.0.0.1
 	export QT_QPA_PLATFORMTHEME=qt5ct
 	export SHELL=\$(which zsh)
