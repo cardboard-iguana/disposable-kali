@@ -96,6 +96,26 @@ distro_setup() {
 	sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' ./usr/lib/code-oss/resources/app/product.json
 	sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            ./usr/lib/code-oss/resources/app/product.json
 
+	# Abuse the command-not-found functionality to add a date/time
+	# stamp before each prompt
+	#
+	cat > ./etc/zsh_command_not_found <<- EOF
+	#!/usr/bin/env zsh
+
+	precmd() {
+	    print -Pnr -- "\$TERM_TITLE"
+
+	    if [[ "\$NEWLINE_BEFORE_PROMPT" == "yes" ]]; then
+	        if [[ -z "\$_NEW_LINE_BEFORE_PROMPT" ]]; then
+	            _NEW_LINE_BEFORE_PROMPT=1
+	        else
+	            print ""
+	        fi
+	    fi
+	    date "+%Y-%m-%d @ %H:%M:%S %Z"
+	}
+	EOF
+
 	# Create update script (useful for long-running environments)
 	#
 	cat > ./usr/local/bin/update.sh <<- EOF

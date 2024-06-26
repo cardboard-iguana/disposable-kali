@@ -273,6 +273,18 @@ cat > $USER_HOME/.bash_aliases << CONF
 #!/usr/bin/env bash
 
 export LANG=en_US.UTF-8
+
+function bash_prompt_precmd {
+	if [[ "\$NEWLINE_BEFORE_PROMPT" == "yes" ]]; then
+		if [[ -z "\$_NEW_LINE_BEFORE_PROMPT" ]]; then
+			_NEW_LINE_BEFORE_PROMPT=1
+		else
+			echo ""
+		fi
+	fi
+	date "+%Y-%m-%d @ %H:%M:%S %Z"
+}
+PROMPT_COMMAND=bash_prompt_precmd
 CONF
 
 mkdir --parents $USER_HOME/.BurpSuite
