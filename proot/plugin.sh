@@ -15,6 +15,7 @@ distro_setup() {
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt full-upgrade --quiet --assume-yes --fix-broken
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes \
+		asciinema \
 		at-spi2-core \
 		burpsuite \
 		code-oss \
@@ -36,6 +37,7 @@ distro_setup() {
 		npm \
 		openssh-client \
 		pm-utils \
+		recordmydesktop \
 		tmux \
 		xclip \
 		xorg \

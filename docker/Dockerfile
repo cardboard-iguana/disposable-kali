@@ -24,6 +24,7 @@ RUN <<EOF
 export DEBIAN_FRONTEND=noninteractive
 
 apt install --quiet --assume-yes \
+    asciinema \
     burpsuite \
     code-oss \
     dialog \
@@ -44,6 +45,7 @@ apt install --quiet --assume-yes \
     npm \
     openssh-client \
     openvpn \
+    recordmydesktop \
     tmux \
     xclip \
     xorg \
