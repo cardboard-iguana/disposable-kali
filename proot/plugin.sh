@@ -85,7 +85,8 @@ distro_setup() {
 	sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         ./etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' ./etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"+lock-screen"/"-lock-screen"/'                          ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S"/'                         ./etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                          ./etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                      ./etc/xdg/xfce4/panel/default.xml
 
 	# Fix VS Code files
 	#
@@ -117,7 +118,8 @@ distro_setup() {
 	sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 	sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 	sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S"/'                         /etc/xdg/xfce4/panel/default.xml
+	sudo sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                          /etc/xdg/xfce4/panel/default.xml
+	sudo sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                      /etc/xdg/xfce4/panel/default.xml
 
 	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
 	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
