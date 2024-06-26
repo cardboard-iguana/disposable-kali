@@ -125,7 +125,7 @@ distro_setup() {
 
 	cp --archive --force --no-target-directory /etc/skel \$HOME
 
-	ln --symbolic --force .face \$HOME/.face.icon
+	ln --symbolic --force \$HOME/.face \$HOME/.face.icon
 
 	head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
 	cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
