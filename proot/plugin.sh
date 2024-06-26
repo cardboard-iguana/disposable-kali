@@ -38,7 +38,6 @@ distro_setup() {
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
-		tmux \
 		xclip \
 		xorg \
 		yarnpkg
@@ -70,7 +69,6 @@ distro_setup() {
 
 	touch ./root/.hushlogin
 	touch ./var/lib/postgresql/.hushlogin
-	mkdir --parents ./root/.tmux
 
 	chmod u+s ./usr/bin/sudo
 
@@ -152,7 +150,6 @@ distro_setup() {
 
 	export LANG=en_US.UTF-8
 	export SHELL=\$(which zsh)
-	export TMUX_TMPDIR=\$HOME/.tmux
 
 	/usr/bin/env zsh
 
@@ -173,7 +170,6 @@ distro_setup() {
 	export PULSE_SERVER=tcp:127.0.0.1
 	export QT_QPA_PLATFORMTHEME=qt5ct
 	export SHELL=\$(which zsh)
-	export TMUX_TMPDIR=\$HOME/.tmux
 
 	dbus-launch --exit-with-session startxfce4
 
@@ -303,32 +299,10 @@ distro_setup() {
 	chmod 700 ./home/kali/.ssh
 	chmod 600 ./home/kali/.ssh/*
 
-	mkdir --parents ./home/kali/.tmux
-
-	cat > ./home/kali/.tmux.conf <<- EOF
-	set -g default-terminal "tmux-256color"
-	set -g allow-passthrough off
-	set -g history-limit 16383
-
-	set -g mouse on
-	set-option -s set-clipboard off
-	bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-	bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-	EOF
-
 	cat > ./home/kali/.zshenv <<- EOF
 	#!/usr/bin/env zsh
 
 	export LANG=en_US.UTF-8
-
-	if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
-	    if [[ \$(tmux list-sessions 2> /dev/null | grep -vc "(attached)") -eq 0 ]]; then
-	        exec tmux -2 new-session
-	    else
-	        exec tmux -2 attach-session
-	    fi
-	fi
-	alias ntterm="qterminal &> /dev/null & disown"
 
 	[[ -f /tmp/okc-ssh-agent.env ]] && source /tmp/okc-ssh-agent.env
 	EOF

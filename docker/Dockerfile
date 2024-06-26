@@ -46,7 +46,6 @@ apt install --quiet --assume-yes \
     openssh-client \
     openvpn \
     recordmydesktop \
-    tmux \
     xclip \
     xorg \
     xorgxrdp \
@@ -272,15 +271,6 @@ cat > $USER_HOME/.bash_aliases << CONF
 #!/usr/bin/env bash
 
 export LANG=en_US.UTF-8
-
-if [[ -z "\$TMUX" ]] && [[ ! -e \$HOME/no-tmux.txt ]] && [[ \$- == *i* ]] && [[ -n "\$DISPLAY" ]] && [[ -z "\$VSCODE_PID" ]]; then
-    if [[ \$(tmux list-sessions 2> /dev/null | grep -vc "(attached)") -eq 0 ]]; then
-        exec tmux -2 new-session
-    else
-        exec tmux -2 attach-session
-    fi
-fi
-alias ntterm="qterminal &> /dev/null & disown"
 CONF
 
 mkdir --parents $USER_HOME/.BurpSuite
@@ -393,17 +383,6 @@ Host *
 CONF
 chmod 700 $USER_HOME/.ssh
 chmod 600 $USER_HOME/.ssh/*
-
-cat > $USER_HOME/.tmux.conf << CONF
-set -g default-terminal "tmux-256color"
-set -g allow-passthrough off
-set -g history-limit 16383
-
-set -g mouse on
-set-option -s set-clipboard off
-bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
-CONF
 
 cat > $USER_HOME/.xsessionrc << CONF
 #!/usr/bin/env bash
