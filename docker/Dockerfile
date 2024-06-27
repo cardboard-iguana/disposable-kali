@@ -25,6 +25,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt install --quiet --assume-yes \
     asciinema \
+    bc \
     burpsuite \
     code-oss \
     dialog \
@@ -159,6 +160,33 @@ sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          /etc/xdg/qter
 sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 EOF
 
+# We need a custom script to make sure that XFCE's background is set
+# consistently to a solid color (and *stays* set between sessions)
+#
+RUN <<EOF
+cat > /usr/local/bin/set-background-to-solid-color.sh << SCRIPT
+#!/usr/bin/env bash
+
+XRDP_BG_COLOR="\$(grep -E '^blue=' /etc/xrdp/xrdp.ini | sed 's/.\\+=//' | tr '[:lower:]' '[:upper:]')"
+
+RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
+GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
+BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
+
+xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+$##' | sort -u | while read BACKDROP; do
+	xfconf-query --channel xfce4-desktop --property \$BACKDROP/image-style --create --type int --set 0
+	xfconf-query --channel xfce4-desktop --property \$BACKDROP/color-style --create --type int --set 0
+	xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \
+	             --type double --set \$RED \
+	             --type double --set \$GREEN \
+	             --type double --set \$BLUE \
+	             --type double --set 1
+done
+SCRIPT
+
+chmod 755 /usr/local/bin/set-background-to-solid-color.sh
+EOF
+
 # Fix scroll on macOS
 #
 RUN --mount=type=secret,id=IS_MACOS <<EOF
@@ -224,11 +252,11 @@ sudo sed -i 's/"Kali-Dark"/"Windows-10"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-
 sudo sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 sudo sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 
-sudo sed -i 's/^icon_theme=.\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
-sudo sed -i 's#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+sudo sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
+sudo sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
 
-sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          /etc/xdg/qterminal.org/qterminal.ini
-sudo sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
+sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
+sudo sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 
 sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
 sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
@@ -375,6 +403,16 @@ cat > $USER_HOME/.config/autostart/disable-session-save-on-exit.desktop << AUTOS
 Type=Application
 Name=Disable session save-on-exit
 Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/set-background-to-solid-color.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Set background to solid color
+Exec=/usr/local/bin/set-background-to-solid-color.sh
 StartupNotify=false
 Terminal=false
 Hidden=false

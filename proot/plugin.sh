@@ -17,6 +17,7 @@ distro_setup() {
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes \
 		asciinema \
 		at-spi2-core \
+		bc \
 		burpsuite \
 		code-oss \
 		dialog \
@@ -111,6 +112,32 @@ distro_setup() {
 	sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          ./etc/xdg/qterminal.org/qterminal.ini
 	sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' ./etc/xdg/qterminal.org/qterminal.ini
 
+	# We need a custom script to make sure that XFCE's background is
+	# set consistently to a solid color (and *stays* set between
+	# sessions)
+	#
+	cat > ./usr/local/bin/set-background-to-solid-color.sh <<- EOF
+	#!/usr/bin/env bash
+
+	XRDP_BG_COLOR=19315A
+
+	RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
+	GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
+	BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
+
+	xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+$##' | sort -u | while read BACKDROP; do
+		xfconf-query --channel xfce4-desktop --property \$BACKDROP/image-style --create --type int --set 0
+		xfconf-query --channel xfce4-desktop --property \$BACKDROP/color-style --create --type int --set 0
+		xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \
+		             --type double --set \$RED \
+		             --type double --set \$GREEN \
+		             --type double --set \$BLUE \
+		             --type double --set 1
+	done
+	EOF
+
+	chmod 755 ./usr/local/bin/set-background-to-solid-color.sh
+
 	# Fix VS Code files
 	#
 	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' ./usr/share/applications/code-oss.desktop
@@ -178,11 +205,11 @@ distro_setup() {
 	sudo sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 	sudo sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 
-	sudo sed -i 's/^icon_theme=.\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
-	sudo sed -i 's#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+	sudo sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
+	sudo sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
 
-	sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          /etc/xdg/qterminal.org/qterminal.ini
-	sudo sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
+	sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
+	sudo sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 
 	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
 	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
@@ -306,6 +333,16 @@ distro_setup() {
 	Type=Application
 	Name=Set Flameshot full desktop screenshot shortcut
 	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/set-background-to-solid-color.desktop << EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Set background to solid color
+	Exec=/usr/local/bin/set-background-to-solid-color.sh
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
