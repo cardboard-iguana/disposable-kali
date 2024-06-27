@@ -328,21 +328,21 @@ distro_setup() {
 	Hidden=false
 	EOF
 
-	cat > ./home/kali/.config/autostart/set-flameshot-desktop-shortcut.desktop <<- EOF
+	cat > ./home/kali/.config/autostart/set-background-to-solid-color.desktop <<- EOF
 	[Desktop Entry]
 	Type=Application
-	Name=Set Flameshot full desktop screenshot shortcut
-	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
+	Name=Set background to solid color
+	Exec=/usr/local/bin/set-background-to-solid-color.sh
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
 	EOF
 
-	cat > ./home/kali/.config/autostart/set-background-to-solid-color.desktop << EOF
+	cat > ./home/kali/.config/autostart/set-flameshot-desktop-shortcut.desktop <<- EOF
 	[Desktop Entry]
 	Type=Application
-	Name=Set background to solid color
-	Exec=/usr/local/bin/set-background-to-solid-color.sh
+	Name=Set Flameshot full desktop screenshot shortcut
+	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
