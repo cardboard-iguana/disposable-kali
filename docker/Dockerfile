@@ -173,13 +173,13 @@ RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
 GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
 BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
 
-xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+$##' | sort -u | while read BACKDROP; do
+xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+\$##' | sort -u | while read BACKDROP; do
 	xfconf-query --channel xfce4-desktop --property \$BACKDROP/image-style --create --type int --set 0
 	xfconf-query --channel xfce4-desktop --property \$BACKDROP/color-style --create --type int --set 0
-	xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \
-	             --type double --set \$RED \
-	             --type double --set \$GREEN \
-	             --type double --set \$BLUE \
+	xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \\
+	             --type double --set \$RED \\
+	             --type double --set \$GREEN \\
+	             --type double --set \$BLUE \\
 	             --type double --set 1
 done
 SCRIPT
