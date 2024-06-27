@@ -374,7 +374,7 @@ AUTOSTART
 cat > $USER_HOME/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
-Name=Disable session autosave
+Name=Disable session save-on-exit
 Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
 StartupNotify=false
 Terminal=false
@@ -401,21 +401,21 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-session-name.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session autosave
-Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
 cat > $USER_HOME/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set Mousepad color scheme
 Exec=gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/set-session-name.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Set session name
+Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
 StartupNotify=false
 Terminal=false
 Hidden=false
