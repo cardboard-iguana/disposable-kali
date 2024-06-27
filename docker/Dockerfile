@@ -40,6 +40,7 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
     kali-desktop-xfce \
+    kali-undercover \
     metasploit-framework \
     nano \
     npm \
@@ -130,8 +131,33 @@ sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce
 sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                          /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                      /etc/xdg/xfce4/panel/default.xml
+EOF
+
+# Additional customizations
+#
+RUN <<EOF
+sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
+
+sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+
+sed -i 's/"Kali-Dark"/"Windows-10"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+
+sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+
+sed -i 's/^icon_theme=.\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
+sed -i 's#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+
+sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          /etc/xdg/qterminal.org/qterminal.ini
+sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 EOF
 
 # Fix scroll on macOS
@@ -178,12 +204,32 @@ sudo rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
 sudo rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
 sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
-sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                          /etc/xdg/xfce4/panel/default.xml
-sudo sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                      /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                                                           /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/'                                   /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                                                       /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                                                            /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
+sudo sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
+
+sudo sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+sudo sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+sudo sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+
+sudo sed -i 's/"Kali-Dark"/"Windows-10"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+
+sudo sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+sudo sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+
+sudo sed -i 's/^icon_theme=.\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
+sudo sed -i 's#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+
+sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          /etc/xdg/qterminal.org/qterminal.ini
+sudo sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 
 sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
 sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
@@ -293,7 +339,7 @@ cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
     "user_options":{
         "display":{
             "user_interface":{
-                "look_and_feel":"Dark"
+                "look_and_feel":"Light"
             }
         },
         "misc":{
@@ -365,8 +411,23 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
+cat > $USER_HOME/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Set Mousepad color scheme
+Exec=gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
+StartupNotify=false
+Terminal=false
+Hidden=false
+AUTOSTART
+
 mkdir --parents "$USER_HOME/.config/Code - OSS/User"
-echo '{"window.titleBarStyle":"custom"}' > "$USER_HOME/.config/Code - OSS/User/settings.json"
+cat > "$USER_HOME/.config/Code - OSS/User/settings.json" << JSON
+{
+    "window.titleBarStyle": "custom",
+    "workbench.colorTheme": "Default Light Modern"
+}
+JSON
 
 touch $USER_HOME/.hushlogin
 
