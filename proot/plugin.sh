@@ -39,7 +39,6 @@ distro_setup() {
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
-		xclip \
 		xorg \
 		yarnpkg
 

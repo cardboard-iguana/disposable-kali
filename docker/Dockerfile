@@ -47,7 +47,6 @@ apt install --quiet --assume-yes \
     openssh-client \
     openvpn \
     recordmydesktop \
-    xclip \
     xorg \
     xorgxrdp \
     xrdp \
