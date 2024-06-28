@@ -72,7 +72,7 @@ scriptHelp () {
 startCLI () {
 	unNerfProotDistro
 
-	proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/tui.sh
+	proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/sbin/tui.sh
 }
 
 startGUI () {
@@ -83,7 +83,7 @@ startGUI () {
 
 	unNerfProotDistro
 
-	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/bin/gui.sh
+	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/sbin/gui.sh
 
 	pkill -9 dbus
 

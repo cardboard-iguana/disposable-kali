@@ -53,64 +53,110 @@ distro_setup() {
 
 	run_proot_cmd ln --symbolic --force /usr/share/zoneinfo/$(getprop persist.sys.timezone) /etc/localtime
 
-	mv ./usr/bin/systemctl ./usr/bin/systemctl.bin
+	mkdir --parents ./usr/local/bin
+	run_proot_cmd ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
 
 	cat > ./usr/bin/systemctl.sh <<- EOF
 	#!/usr/bin/env bash
-
 	service \$2 \$1
 	EOF
 
 	chmod 755 ./usr/bin/systemctl.sh
 
+	cp ./usr/bin/systemctl    ./usr/bin/systemctl.bin
 	cp ./usr/bin/systemctl.sh ./usr/bin/systemctl
-
-	run_proot_cmd env DEBIAN_FRONTEND=noninteractive make-ssl-cert generate-default-snakeoil
-	chmod 600 ./etc/ssl/private/ssl-cert-snakeoil.key
 
 	touch ./root/.hushlogin
 	touch ./var/lib/postgresql/.hushlogin
 
-	chmod u+s ./usr/bin/sudo
-
-	mkdir --parents ./usr/local/bin
-	run_proot_cmd ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
+	# Create (and run) system update cleanup script.
+	#
+	cat > ./usr/local/sbin/system-update-cleanup.sh <<- EOF
+	# Fix bad permissions on /usr/bin/sudo
+	#
+	chmod u+s /usr/bin/sudo
 
 	# Make sure that problematic services are disabled (power
 	# management, screen saver, etc.)
 	#
-	sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"+lock-screen"/"-lock-screen"/'                          ./etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
 
 	# Additional customizations
 	#
-	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            ./etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        ./etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
 
-	sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+	sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+	sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+	sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
 
-	sed -i 's/"Kali-Dark"/"Windows-10"/' ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+	sed -i 's/"Kali-Dark"/"Windows-10"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 
-	sed -i 's/"Kali-Dark"/"Windows-10"/'                  ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-	sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' ./etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+	sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+	sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 
-	sed -i 's/^icon_theme=.\+/icon_theme=Windows-10-Icons/'                                   ./etc/xdg/qt5ct/qt5ct.conf
-	sed -i 's#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' ./etc/xdg/qt5ct/qt5ct.conf
+	sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
+	sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
 
-	sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'          ./etc/xdg/qterminal.org/qterminal.ini
-	sed -i 's/^ApplicationTransparency=.\+/ApplicationTransparency=0/' ./etc/xdg/qterminal.org/qterminal.ini
+	sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
+	sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
+
+	# Fix VS Code files
+	#
+	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
+	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
+
+	sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
+	sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
+	EOF
+
+	chmod 755 ./usr/local/sbin/system-update-cleanup.sh
+
+	run_proot_cmd /usr/local/sbin/system-update-cleanup.sh
+
+	# Create update script (useful for long-running environments)
+	#
+	cat > ./usr/local/bin/update.sh <<- EOF
+	#!/usr/bin/env bash
+
+	sudo cp /usr/bin/systemctl.bin /usr/bin/systemctl
+
+	sudo apt update
+	sudo apt full-upgrade
+	sudo apt autoremove --purge --autoremove
+	sudo apt clean
+
+	sudo cp /usr/bin/systemctl    /usr/bin/systemctl.bin
+	sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
+
+	sudo /usr/local/sbin/system-update-cleanup.sh
+
+	cp --archive --force --no-target-directory /etc/skel \$HOME
+
+	ln --symbolic --force \$HOME/.face \$HOME/.face.icon
+
+	head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
+	cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
+	  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
+	  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
+	  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
+	  <entry key="eulacommunity" value="4"/>
+	</map>
+	CONF
+	EOF
+
+	chmod 755 ./usr/local/bin/update.sh
 
 	# We need a custom script to make sure that XFCE's background is
 	# set consistently to a solid color (and *stays* set between
-	# sessions)
+	# sessions).
 	#
 	cat > ./usr/local/bin/set-background-to-solid-color.sh <<- EOF
 	#!/usr/bin/env bash
@@ -134,14 +180,6 @@ distro_setup() {
 
 	chmod 755 ./usr/local/bin/set-background-to-solid-color.sh
 
-	# Fix VS Code files
-	#
-	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' ./usr/share/applications/code-oss.desktop
-	sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' ./usr/share/applications/code-oss-url-handler.desktop
-
-	sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' ./usr/lib/code-oss/resources/app/product.json
-	sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            ./usr/lib/code-oss/resources/app/product.json
-
 	# Abuse the command-not-found functionality to add a date/time
 	# stamp before each prompt
 	#
@@ -162,72 +200,9 @@ distro_setup() {
 	}
 	EOF
 
-	# Create update script (useful for long-running environments)
-	#
-	cat > ./usr/local/bin/update.sh <<- EOF
-	#!/usr/bin/env bash
-
-	sudo cp /usr/bin/systemctl.bin /usr/bin/systemctl
-
-	sudo apt update
-	sudo apt full-upgrade
-	sudo apt autoremove --purge --autoremove
-	sudo apt clean
-
-	sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
-	sudo chmod u+s /usr/bin/sudo
-
-	sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                                                           /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/'                                   /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"+lock-screen"/"-lock-screen"/'                                                            /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
-	sudo sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
-
-	sudo sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sudo sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sudo sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-
-	sudo sed -i 's/"Kali-Dark"/"Windows-10"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
-
-	sudo sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-	sudo sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-
-	sudo sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
-	sudo sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
-
-	sudo sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
-	sudo sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
-
-	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
-	sudo sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss-url-handler.desktop
-
-	sudo sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
-	sudo sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
-
-	cp --archive --force --no-target-directory /etc/skel \$HOME
-
-	ln --symbolic --force \$HOME/.face \$HOME/.face.icon
-
-	head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
-	cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
-	  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
-	  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
-	  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
-	  <entry key="eulacommunity" value="4"/>
-	</map>
-	CONF
-	EOF
-
-	chmod 755 ./usr/local/bin/update.sh
-
 	# Create startup scripts.
 	#
-	cat > ./usr/local/bin/tui.sh <<- EOF
+	cat > ./usr/local/sbin/tui.sh <<- EOF
 	#!/usr/bin/env bash
 
 	sudo -u postgres /etc/init.d/postgresql start
@@ -240,9 +215,9 @@ distro_setup() {
 	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
 
-	chmod 755 ./usr/local/bin/tui.sh
+	chmod 755 ./usr/local/sbin/tui.sh
 
-	cat > ./usr/local/bin/gui.sh <<- EOF
+	cat > ./usr/local/sbin/gui.sh <<- EOF
 	#!/usr/bin/env bash
 
 	sudo -u postgres /etc/init.d/postgresql start
@@ -260,7 +235,12 @@ distro_setup() {
 	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
 
-	chmod 755 ./usr/local/bin/gui.sh
+	chmod 755 ./usr/local/sbin/gui.sh
+
+	# Generate local self-signed certificate (for PostgreSQL).
+	#
+	run_proot_cmd env DEBIAN_FRONTEND=noninteractive make-ssl-cert generate-default-snakeoil
+	chmod 600 ./etc/ssl/private/ssl-cert-snakeoil.key
 
 	# User setup.
 	#
