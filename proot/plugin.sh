@@ -79,10 +79,6 @@ distro_setup() {
 	# Make sure that problematic services are disabled (power
 	# management, screen saver, etc.)
 	#
-	rm --force ./etc/xdg/autostart/nm-applet.desktop           &> /dev/null
-	rm --force ./etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
-	rm --force ./etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
-
 	sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         ./etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' ./etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"+lock-screen"/"-lock-screen"/'                          ./etc/xdg/xfce4/panel/default.xml
@@ -180,10 +176,6 @@ distro_setup() {
 
 	sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
 	sudo chmod u+s /usr/bin/sudo
-
-	sudo rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
-	sudo rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
-	sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
 	sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                                                           /etc/xdg/xfce4/panel/default.xml
 	sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/'                                   /etc/xdg/xfce4/panel/default.xml
@@ -328,6 +320,16 @@ distro_setup() {
 	Hidden=false
 	EOF
 
+	cat > ./home/kali/.config/autostart/nm-applet.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable NetworkManager applet
+	Exec=/usr/bin/true
+	StartupNotify=false
+	Terminal=false
+	Hidden=true
+	EOF
+
 	cat > ./home/kali/.config/autostart/set-background-to-solid-color.desktop <<- EOF
 	[Desktop Entry]
 	Type=Application
@@ -376,6 +378,26 @@ distro_setup() {
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
+	EOF
+
+	cat > ./home/kali/.config/autostart/xfce4-power-manager.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable Xfce power management applet
+	Exec=/usr/bin/true
+	StartupNotify=false
+	Terminal=false
+	Hidden=true
+	EOF
+
+	cat > ./home/kali/.config/autostart/xscreensaver.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable screen saver
+	Exec=/usr/bin/true
+	StartupNotify=false
+	Terminal=false
+	Hidden=true
 	EOF
 
 	mkdir --parents ./home/kali/.config/"Code - OSS"/User

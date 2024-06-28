@@ -123,10 +123,6 @@ EOF
 # screen saver, etc.)
 #
 RUN <<EOF
-rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
-rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
-rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
-
 sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
@@ -226,10 +222,6 @@ sudo apt autoremove --purge --autoremove
 sudo apt clean
 
 sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
-
-sudo rm --force /etc/xdg/autostart/nm-applet.desktop           &> /dev/null
-sudo rm --force /etc/xdg/autostart/xfce4-power-manager.desktop &> /dev/null
-sudo rm --force /etc/xdg/autostart/xscreensaver.desktop        &> /dev/null
 
 sudo sed -i 's/"cpugraph"/"cpugraph-disabled"/'                                                           /etc/xdg/xfce4/panel/default.xml
 sudo sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/'                                   /etc/xdg/xfce4/panel/default.xml
@@ -408,6 +400,16 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
+cat > $USER_HOME/.config/autostart/nm-applet.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable NetworkManager applet
+Exec=/usr/bin/true
+StartupNotify=false
+Terminal=false
+Hidden=true
+AUTOSTART
+
 cat > $USER_HOME/.config/autostart/set-background-to-solid-color.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
@@ -456,6 +458,26 @@ Exec=xfconf-query --channel xfce4-session --property /general/SessionName --crea
 StartupNotify=false
 Terminal=false
 Hidden=false
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/xfce4-power-manager.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable Xfce power management applet
+Exec=/usr/bin/true
+StartupNotify=false
+Terminal=false
+Hidden=true
+AUTOSTART
+
+cat > $USER_HOME/.config/autostart/xscreensaver.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable screen saver
+Exec=/usr/bin/true
+StartupNotify=false
+Terminal=false
+Hidden=true
 AUTOSTART
 
 mkdir --parents "$USER_HOME/.config/Code - OSS/User"
