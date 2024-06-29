@@ -161,7 +161,7 @@ if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
 	# Fix scroll on macOS
 	#
 	if [[ \$(grep -Ec '^XRDP_XORG_TOUCHPAD_SCROLL_HACK=yes$' /etc/xrdp/sesman.ini) -eq 0 ]]; then
-	    sudo sed -i 's/^\\[SessionVariables\\]\$/\\[SessionVariables\\]\\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
+	    sed -i 's/^\\[SessionVariables\\]\$/\\[SessionVariables\\]\\nXRDP_XORG_TOUCHPAD_SCROLL_HACK=yes/' /etc/xrdp/sesman.ini
 	fi
 	SCRIPT
 fi
