@@ -115,6 +115,10 @@ distro_setup() {
 
 	sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
 	sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
+
+	# PostgreSQL upgrade hack
+	#
+	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-16.prerm
 	EOF
 
 	chmod 755 ./usr/local/sbin/system-update-cleanup.sh
@@ -126,6 +130,8 @@ distro_setup() {
 	cat > ./usr/local/bin/update.sh <<- EOF
 	#!/usr/bin/env bash
 
+	sudo -u postgres /etc/init.d/postgresql stop
+
 	sudo cp /usr/bin/systemctl.bin /usr/bin/systemctl
 
 	sudo apt update
@@ -135,6 +141,8 @@ distro_setup() {
 
 	sudo cp /usr/bin/systemctl    /usr/bin/systemctl.bin
 	sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
+
+	sudo -u postgres /etc/init.d/postgresql stop
 
 	sudo /usr/local/sbin/system-update-cleanup.sh
 
