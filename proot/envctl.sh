@@ -4,7 +4,7 @@ NAME="{{environment-name}}"
 
 # Core engagement files/data.
 #
-SCRIPT="$HOME/.local/bin/${NAME}.sh"
+SCRIPT="$HOME/bin/${NAME}.sh"
 ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
 DISTRO_ROOT="$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME"
 

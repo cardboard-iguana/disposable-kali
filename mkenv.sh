@@ -6,23 +6,24 @@ if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
 	if [[ ! -f docker/envctl.sh ]] || [[ ! -f docker/Dockerfile ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
 		exit 1
-	else
-		CODE_PATH="docker"
 	fi
+	if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+		echo "$HOME/.local/bin must bin in your PATH!"
+		exit 1
+	fi
+	CODE_PATH="docker"
 elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
 	if [[ ! -f proot/envctl.sh ]] || [[ ! -f proot/plugin.sh ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
 		exit 1
-	else
-		CODE_PATH="proot"
 	fi
+	if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+		echo "$HOME/bin must bin in your PATH!"
+		exit 1
+	fi
+	CODE_PATH="proot"
 else
 	echo "No usable install of Docker or PRoot Distro found!"
-	exit 1
-fi
-
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-	echo "$HOME/.local/bin must bin in your PATH!"
 	exit 1
 fi
 
@@ -71,12 +72,12 @@ fi
 
 # Determine build variables.
 #
-SCRIPT="$HOME/.local/bin/${NAME}.sh"
-
 if [[ "$CODE_PATH" == "docker" ]]; then
+	SCRIPT="$HOME/.local/bin/${NAME}.sh"
 	ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 elif [[ "$CODE_PATH" == "proot" ]]; then
+	SCRIPT="$HOME/bin/${NAME}.sh"
 	ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
 	TIMEZONE="$(getprop persist.sys.timezone)"
 else
@@ -122,7 +123,7 @@ fi
 # Create necessary directories.
 #
 mkdir --parents "$ENGAGEMENT_DIR"
-mkdir --parents "$HOME/.local/bin"
+mkdir --parents "$(dirname "$SCRIPT")"
 
 # Build container/proot.
 #
