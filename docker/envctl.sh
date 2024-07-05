@@ -201,13 +201,21 @@ restoreEngagement () {
 			mkdir --parents "$(dirname "$SCRIPT")"
 			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
 		fi
-		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
-			mkdir --parents "$HOME/.local/share/icons"
-			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
-		fi
-		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
-			mkdir --parents "$HOME/.local/share/applications"
-			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+		if [[ "$(uname)" == "Darwin" ]]; then
+			if [[ -f "$ENGAGEMENT_DIR/${NAME}.app.tar.gz" ]]; then
+				mkdir --parents "$HOME/Applications"
+				tar -xzf "${NAME}.app.tar.gz"
+				mv "${NAME}.app" "$HOME/Applications"
+			fi
+		else
+			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
+				mkdir --parents "$HOME/.local/share/icons"
+				cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
+			fi
+			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
+				mkdir --parents "$HOME/.local/share/applications"
+				cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+			fi
 		fi
 
 		echo ""
@@ -236,11 +244,19 @@ commitToImage () {
 	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh"
 	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh" "$BACKUP_DIR/$NAME.sh"
 
-	cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop"
-	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop" "$BACKUP_DIR/$NAME.desktop"
+	if [[ "$(uname)" == "Darwin" ]]; then
+		(
+			cd "$HOME/Applications"
+			tar -czf "$BACKUP_DIR/${NAME}.app.${TIMESTAMP}.tar.gz" "${NAME}.app"
+		)
+		ln -sf "$BACKUP_DIR/${NAME}.app.${TIMESTAMP}.tar.gz" "$BACKUP_DIR/${NAME}.app.tar.gz"
+	else
+		cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop"
+		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop" "$BACKUP_DIR/$NAME.desktop"
 
-	cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png"
-	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png" "$BACKUP_DIR/$NAME.png"
+		cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png"
+		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png" "$BACKUP_DIR/$NAME.png"
+	fi
 
 	echo ">>>> Removing temporary image..."
 	docker rmi --force "${NAME}:${TIMESTAMP}"
@@ -261,8 +277,12 @@ removeContainerImagePair () {
 
 	echo ">>>> Removing control files..."
 	rm --force "$SCRIPT"
-	rm --force "$HOME/.local/share/applications/${NAME}.desktop"
-	rm --force "$HOME/.local/share/icons/${NAME}.png"
+	if [[ "$(uname)" == "Darwin" ]]; then
+		rm --force --recursive "$HOME/Applications/${NAME}.app"
+	else
+		rm --force "$HOME/.local/share/applications/${NAME}.desktop"
+		rm --force "$HOME/.local/share/icons/${NAME}.png"
+	fi
 }
 
 # Helper function that sleeps briefly.
