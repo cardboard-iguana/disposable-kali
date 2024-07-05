@@ -217,7 +217,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 
 	mkdir --parents $HOME/.shortcuts/icons
-	cp proot/wikimedia-kali-logo.png $HOME/.shortcuts/icons/"${NAME}.sh.png"
+	cp icons/wikimedia-kali-logo.png $HOME/.shortcuts/icons/"${NAME}.sh.png"
 
 	mkdir --parents $HOME/.shortcuts/tasks
 	sed "s/{{environment-name}}/$NAME/" proot/widget.sh > $HOME/.shortcuts/tasks/"${NAME}.sh"
