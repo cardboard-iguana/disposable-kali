@@ -4,8 +4,6 @@ Disposable [Kali Linux](https://kali.org) environments using [Docker](https://ww
 This setup is probably sufficiently opinionated that it won't be useful out-of-the box for `$RANDOM_HACKER`. However, it is provided here as a resource for others to study, fork, and draw inspiration from. (Also, I'm not adverse to integrating other folks' suggestions! I'm just not going to make any changes that either make my own use cases more complicated or this repo more difficult to maintain in general. Within those bounds though, issues and pull requests are welcome!)
 
 ## Prerequisits
-On all systems, `$HOME/.local/bin` is expected to bin in your `$PATH`.
-
 ### macOS
 - [Rancher Desktop](https://rancherdesktop.io/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
@@ -24,6 +22,8 @@ Rancher Desktop must be run once before trying to deploy a disposable environmen
 - Application → Behavior → Background → Start in the background → On
 - Virtual Machine → Volumes → Mount Type → virtiofs
 - Virtual Machine → Emulation → Virtual Machine Type → VZ
+
+Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
@@ -48,6 +48,8 @@ usermod --append --groups docker $USER
 #
 apt install freerdp2-x11
 ```
+
+Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 
 ### Android
 - [Termux](https://f-droid.org/en/packages/com.termux/)
@@ -78,6 +80,8 @@ termux-setup-storage
 You will almost certainly want to enable Developer Mode and then set the following option to prevent desktop sessions from being unexpectedly killed:
 
 - Developer options → Apps → Disable child process restrictions → On
+
+Finally, make sure that `$HOME/bin` exists and is in your Termux `$PATH`.
 
 ## Usage
 To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
