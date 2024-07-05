@@ -197,17 +197,17 @@ restoreEngagement () {
 		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
 		                "$NAME"
 
-		if [[ -f "$BACKUP_DIR/$NAME.sh" ]]; then
+		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.sh" ]]; then
 			mkdir --parents "$(dirname "$SCRIPT")"
-			cp --dereference "$BACKUP_DIR/$NAME.sh" "$SCRIPT"
+			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
 		fi
-		if [[ -f "$BACKUP_DIR/$NAME.png" ]]; then
+		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
 			mkdir --parents "$HOME/.local/share/icons"
-			cp --dereference "$BACKUP_DIR/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
+			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
 		fi
-		if [[ -f "$BACKUP_DIR/$NAME.desktop" ]]; then
+		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
 			mkdir --parents "$HOME/.local/share/applications"
-			cp --dereference "$BACKUP_DIR/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
 		fi
 
 		echo ""
