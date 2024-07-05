@@ -113,9 +113,6 @@ archiveEngagement () {
 	prootBackup
 	prootRemove
 
-	echo ">>>> Archiving this control script..."
-	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
-
 	echo ""
 	echo "Engagement $NAME has been archived in $ENGAGEMENT_DIR."
 }
@@ -140,8 +137,6 @@ deleteEngagement () {
 
 		echo ">>>> Deleting engagement directory..."
 		rm --recursive --force "$ENGAGEMENT_DIR"
-		echo ">>>> Deleting this control script..."
-		rm --force "$SCRIPT"
 
 		echo ""
 		echo "Engagement $NAME has been deleted."
@@ -161,12 +156,31 @@ backupEngagement () {
 # Restore from the most recent backup.
 #
 restoreEngagement () {
+	unNerfProotDistro
 	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | wc -l) -gt 0 ]]; then
-		unNerfProotDistro
 
 		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | sort | tail -1)"
 
 		proot-distro restore "$RESTORE_TARGET"
+
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.sh | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.sh | sort | tail -1)"
+			cp "$RESTORE_TARGET" "$SCRIPT"
+			chmod 755 "$SCRIPT"
+		fi
+
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.widget | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.widget | sort | tail -1)"
+			mkdir --parents $HOME/.shortcuts/tasks
+			cp "$RESTORE_TARGET" $HOME/.shortcuts/tasks/"${NAME}.sh"
+			chmod 755 $HOME/.shortcuts/tasks/"${NAME}.sh"
+		fi
+
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.png | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.png | sort | tail -1)"
+			mkdir --parents $HOME/.shortcuts/icons
+			cp "$RESTORE_TARGET" $HOME/.shortcuts/icons/"${NAME}.sh.png"
+		fi
 	else
 		echo "No backups found in $ENGAGEMENT_DIR/Backups!"
 	fi
@@ -177,16 +191,26 @@ restoreEngagement () {
 prootBackup () {
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
-	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
+	PROOT_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
+	ENVCTL_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.sh"
+	WIDGET_SH_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.widget"
+	WIDGET_PNG_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.png"
 
 	mkdir --parents "$BACKUP_DIR"
-	proot-distro backup --output "$BACKUP_FILE" "$NAME"
+	proot-distro backup --output "$PROOT_BACKUP_FILE" "$NAME"
+	cp "$SCRIPT" "$ENVCTL_BACKUP_FILE"
+	cp $HOME/.shortcuts/tasks/"${NAME}.sh" "$WIDGET_SH_BACKUP_FILE"
+	cp $HOME/.shortcuts/icons/"${NAME}.sh.png" "$WIDGET_PNG_BACKUP_FILE"
 }
 
 # Helper function that removes PRoot data.
 #
 prootRemove () {
 	proot-distro remove "$NAME"
+
+	rm --force $HOME/.shortcuts/icons/"${NAME}.sh.png"
+	rm --force $HOME/.shortcuts/tasks/"${NAME}.sh"
+	rm --force "$SCRIPT"
 }
 
 # PRoot Distro engages in some serious nannying around pentesting

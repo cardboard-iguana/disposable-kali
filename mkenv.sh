@@ -215,6 +215,12 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	proot-distro login "$NAME" -- passwd kali
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
+
+	mkdir --parents $HOME/.shortcuts/icons
+	cp proot/wikimedia-kali-logo.png $HOME/.shortcuts/icons/"${NAME}.sh.png"
+
+	mkdir --parents $HOME/.shortcuts/tasks
+	sed "s/{{environment-name}}/$NAME/" proot/widget.sh > $HOME/.shortcuts/tasks/"${NAME}.sh"
 else
 	echo "You should not be here."
 	exit 2
