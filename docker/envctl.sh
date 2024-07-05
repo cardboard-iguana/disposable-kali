@@ -11,7 +11,7 @@ STATE="$(docker container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/n
 
 # Sanity check environment.
 #
-if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]]; then
 	SANITY="100%"
 elif [[ -n "$ID" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
@@ -107,9 +107,6 @@ archiveEngagement () {
 	commitToImage
 	removeContainerImagePair
 
-	echo ">>>> Archiving this control script..."
-	mv --force "$SCRIPT" "$ENGAGEMENT_DIR"/
-
 	echo ""
 	echo "Engagement $NAME has been archived in $ENGAGEMENT_DIR."
 }
@@ -131,10 +128,9 @@ deleteEngagement () {
 		echo ">>>> Stopping Docker container..."
 		stopEngagement
 		removeContainerImagePair
+
 		echo ">>>> Deleting engagement directory..."
 		rm --recursive --force "$ENGAGEMENT_DIR"
-		echo ">>>> Deleting this control script..."
-		rm --force "$SCRIPT"
 
 		echo ""
 		echo "Engagement $NAME has been deleted."
@@ -166,16 +162,31 @@ restoreEngagement () {
 
 		echo ">>>> Restoring image..."
 		docker load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
+
 		echo ">>>> Fixing image tag..."
 		CURRENT_TAG="$(docker images --format "{{.Tag}}" "$NAME")"
 		docker image tag "$NAME:$CURRENT_TAG" "$NAME:latest"
 		docker rmi "$NAME:$CURRENT_TAG"
+
 		echo ">>>> Recreating container..."
 		docker create --name "$NAME" \
 		              --publish 127.0.0.1:3389:3389 \
 		              --tty \
 		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
 		                "$NAME"
+
+		if [[ -f "$BACKUP_DIR/$NAME.sh" ]]; then
+			mkdir --parents "$(dirname "$SCRIPT")"
+			cp --dereference "$BACKUP_DIR/$NAME.sh" "$SCRIPT"
+		fi
+		if [[ -f "$BACKUP_DIR/$NAME.png" ]]; then
+			mkdir --parents "$HOME/.local/share/icons"
+			cp --dereference "$BACKUP_DIR/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
+		fi
+		if [[ -f "$BACKUP_DIR/$NAME.desktop" ]]; then
+			mkdir --parents "$HOME/.local/share/applications"
+			cp --dereference "$BACKUP_DIR/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+		fi
 
 		echo ""
 		echo "Engagement $NAME has been restored from the backup at $ENGAGEMENT_DIR/Backups/$NAME.tar."
@@ -191,12 +202,24 @@ commitToImage () {
 	echo ">>>> Committing changes to temporary image..."
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 	docker commit --author "$USER" --message "$NAME backup for $(date)" "$NAME" "$NAME:$TIMESTAMP"
+
 	echo ">>>> Exporting temporary image..."
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
 	mkdir --parents "$BACKUP_DIR"
 	docker save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
 	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
+
+	echo ">>>> Exporting control files..."
+	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh"
+	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh" "$BACKUP_DIR/$NAME.sh"
+
+	cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop"
+	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop" "$BACKUP_DIR/$NAME.desktop"
+
+	cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png"
+	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png" "$BACKUP_DIR/$NAME.png"
+
 	echo ">>>> Removing temporary image..."
 	docker rmi --force "${NAME}:${TIMESTAMP}"
 }
@@ -207,10 +230,17 @@ commitToImage () {
 removeContainerImagePair () {
 	echo ">>>> Removing Docker container..."
 	docker rm --force --volumes "$NAME"
+
 	echo ">>>> Removing Docker image..."
 	docker rmi --force "$NAME"
+
 	echo ">>>> Pruning Docker to remove dangling references..."
 	docker image prune --force
+
+	echo ">>>> Removing control files..."
+	rm --force "$SCRIPT"
+	rm --force "$HOME/.local/share/applications/${NAME}.desktop"
+	rm --force "$HOME/.local/share/icons/${NAME}.png"
 }
 
 # Helper function that sleeps briefly.
@@ -218,6 +248,17 @@ removeContainerImagePair () {
 waitForIt () {
 	SECONDS=12
 	echo -n ">>>> Sleeping briefly"
+	if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
+		(
+			for STEP in $(seq 1 $SECONDS); do
+				sleep 1
+				echo $(( $STEP * 100 / $SECONDS ))
+			done
+		) | zenity --title=$NAME \
+	               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
+		           --text="Sleeping briefly to give container time to start..." \
+		           --progress --percentage=0 --auto-close --no-cancel &
+	fi
 	for STEP in $(seq 1 $SECONDS); do
 		sleep 1
 		echo -n "."

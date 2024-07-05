@@ -175,9 +175,17 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
 	                "$NAME"
 
-	unset IS_MACOS USER_NAME USER_PASS TIMEZONE
-
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
+
+	if [[ "$IS_MACOS" == "no" ]]; then
+		mkdir --parents $HOME/.local/share/icons
+		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
+
+		mkdir --parents $HOME/.local/share/applications
+		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" docker/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
+	fi
+
+	unset IS_MACOS USER_NAME USER_PASS TIMEZONE
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	# PRoot Distro engages in some serious nannying around pentesting
 	# distros. While I understand the Termux project's desire not to

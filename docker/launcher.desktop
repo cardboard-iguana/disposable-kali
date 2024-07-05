@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name={{environment-name}}
+Comment=Launch the {{environment-name}} Kali Linux desktop
+Exec={{user-home}}/.local/bin/{{environment-name}}.sh desktop
+Icon={{user-home}}/.local/share/icons/{{environment-name}}.png
+Terminal=false
+Categories=Office;

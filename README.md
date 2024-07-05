@@ -28,6 +28,7 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
 - [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
+- [Zenity](https://gitlab.gnome.org/GNOME/zenity)
 
 On [Debian](https://debian.org/):
 
@@ -46,7 +47,7 @@ usermod --append --groups docker $USER
 # Install additional tools. Alternately, replace `freerdp2-x11` with
 # `freerdp2-wayland`.
 #
-apt install freerdp2-x11
+apt install freerdp2-x11 zenity
 ```
 
 Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
