@@ -177,7 +177,23 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 
 	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
 
-	if [[ "$IS_MACOS" == "no" ]]; then
+	if [[ "$IS_MACOS" == "yes" ]]; then
+		mkdir --parents $HOME/Applications
+		cp docker/launcher.tar /tmp
+		(
+			cd /tmp
+			tar -xvf launcher.tar
+			rm launcher.tar
+			sed "s/{{environment-name}}/$NAME/" launcher.app/launcher > launcher.app/"${NAME}"
+			rm launcher.app/launcher
+			chmod 755 launcher.app/"${NAME}"
+			mv launcher.app/launcher.icns launcher.app/"${NAME}.icns"
+			mv launcher.app $HOME/Applications/"${NAME}.app"
+		)
+
+		defaults write com.apple.dock persistent-apps -array-add "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$HOME/Applications/${NAME}.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"
+		killall -HUP Dock
+	else
 		mkdir --parents $HOME/.local/share/icons
 		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
 

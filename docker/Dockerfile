@@ -40,6 +40,7 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-core \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
+    fuse \
     kali-desktop-xfce \
     kali-undercover \
     metasploit-framework \

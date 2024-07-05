@@ -87,13 +87,13 @@ Finally, make sure that `$HOME/bin` exists and is in your Termux `$PATH`.
 ## Usage
 To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
 
-At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
+At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below. A desktop launcher will also be created allowing for quick access; be aware that on macOS and Linux, the container will *not* terminate when finished, and must be manually stopped using `$CONTROL_SCRIPT stop`!
 
 ### Linux and macOS
 - `$CONTROL_SCRIPT start`: Start the engagement's container.
 - `$CONTROL_SCRIPT stop`: Stop the engagement's container.
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
-- `$CONTROL_SCRIPT desktop`: Connect to a desktop in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary. (**Linux only!** For on macOS, use `$CONTROL_SCRIPT start` and then connect to `localhost:3389` using an RDP client).
+- `$CONTROL_SCRIPT desktop`: Connect to a desktop in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
 - `$CONTROL_SCRIPT backup`: Backup the engagement container in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
 - `$CONTROL_SCRIPT restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
 - `$CONTROL_SCRIPT archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
@@ -106,3 +106,6 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT restore`: Replaces the current engagement environment from the most recent backup in `$ENGAGEMENT_DIR/Backups/`.
 - `$CONTROL_SCRIPT archive`: Backup the engagement environment, delete it, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
+
+## Todo
+- [ ] Get folder redirection working for Linux/macOS (RDP to Docker container).

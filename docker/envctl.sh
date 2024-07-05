@@ -54,9 +54,7 @@ scriptHelp () {
 	echo "  start    Start the engagement's container"
 	echo "  stop     Stop the engagement's container"
 	echo "  shell    Connect to a shell in the engagement's container"
-	if [[ "$(uname -s)" == "Linux" ]]; then
-		echo "  desktop  Connect to a desktop in the engagement's container"
-	fi
+	echo "  desktop  Connect to a desktop in the engagement's container"
 	echo "  backup   Commit changes to the underlying image and back it up"
 	echo "  restore  Restore an image/container pair from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
@@ -90,12 +88,36 @@ startCLI () {
 startGUI () {
 	startEngagement
 
-	if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
-		FREERDP=wlfreerdp
+	if [[ "$(uname)" == "Darwin" ]]; then
+		cat > /tmp/"${NAME}.rdp" <<- EOF
+		smart sizing:i:1
+		screen mode id:i:1
+		prompt for credentials on client:i:1
+		redirectsmartcards:i:0
+		redirectclipboard:i:1
+		forcehidpioptimizations:i:0
+		full address:s:localhost
+		drivestoredirect:s:*
+		networkautodetect:i:0
+		redirectprinters:i:0
+		autoreconnection enabled:i:1
+		session bpp:i:16
+		audiomode:i:0
+		bandwidthautodetect:i:1
+		connection type:i:7
+		dynamic resolution:i:1
+		username:s:$USER
+		allow font smoothing:i:1
+		EOF
+		open /tmp/"${NAME}.rdp"
 	else
-		FREERDP=xfreerdp
+		if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
+			FREERDP=wlfreerdp
+		else
+			FREERDP=xfreerdp
+		fi
+		$FREERDP /bpp:16 /dynamic-resolution /rfx /drive:Engagement,"$ENGAGEMENT_DIR" /u:$USER /v:127.0.0.1:3389
 	fi
-	$FREERDP /bpp:16 /dynamic-resolution /rfx /u:$USER /v:127.0.0.1:3389
 }
 
 # Archive Docker container and control script in ENGAGEMENT_DIR.
@@ -248,16 +270,20 @@ removeContainerImagePair () {
 waitForIt () {
 	SECONDS=12
 	echo -n ">>>> Sleeping briefly"
-	if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-		(
-			for STEP in $(seq 1 $SECONDS); do
-				sleep 1
-				echo $(( $STEP * 100 / $SECONDS ))
-			done
-		) | zenity --title=$NAME \
-	               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
-		           --text="Sleeping briefly to give container time to start..." \
-		           --progress --percentage=0 --auto-close --no-cancel &
+	if [[ "$(uname)" == "Darwin" ]]; then
+		osascript -e "display dialog \"Waiting $SECONDS seconds for the container...\" buttons {\"Dismiss\"} giving up after $SECONDS" &> /dev/null &
+	else
+		if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
+			(
+				for STEP in $(seq 1 $SECONDS); do
+					sleep 1
+					echo $(( $STEP * 100 / $SECONDS ))
+				done
+			) | zenity --title=$NAME \
+		               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
+			           --text="Waiting $SECONDS seconds for the container..." \
+			           --progress --percentage=0 --auto-close --no-cancel &> /dev/null &
+		fi
 	fi
 	for STEP in $(seq 1 $SECONDS); do
 		sleep 1
@@ -279,11 +305,7 @@ case "$1" in
 		startCLI
 		;;
 	"desktop")
-		if [[ "$(uname -s)" == "Linux" ]]; then
-			startGUI
-		else
-			scriptHelp
-		fi
+		startGUI
 		;;
 	"backup")
 		backupEngagement
