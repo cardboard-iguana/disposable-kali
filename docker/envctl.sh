@@ -206,6 +206,7 @@ restoreEngagement () {
 				mkdir --parents "$HOME/Applications"
 				tar -xzf "${NAME}.app.tar.gz"
 				mv "${NAME}.app" "$HOME/Applications"
+				dockutil --add $HOME/Applications/"${NAME}.app"
 			fi
 		else
 			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
@@ -279,6 +280,7 @@ removeContainerImagePair () {
 	rm --force "$SCRIPT"
 	if [[ "$(uname)" == "Darwin" ]]; then
 		rm --force --recursive "$HOME/Applications/${NAME}.app"
+		dockutil --remove $HOME/Applications/"${NAME}.app"
 	else
 		rm --force "$HOME/.local/share/applications/${NAME}.desktop"
 		rm --force "$HOME/.local/share/icons/${NAME}.png"

@@ -191,8 +191,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 			mv launcher.app $HOME/Applications/"${NAME}.app"
 		)
 
-		defaults write com.apple.dock persistent-apps -array-add "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$HOME/Applications/${NAME}.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"
-		killall Dock
+		dockutil --add $HOME/Applications/"${NAME}.app"
 	else
 		mkdir --parents $HOME/.local/share/icons
 		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
