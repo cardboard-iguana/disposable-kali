@@ -116,7 +116,7 @@ startGUI () {
 		else
 			FREERDP=xfreerdp
 		fi
-		$FREERDP /bpp:16 /dynamic-resolution /rfx /drive:Engagement,"$ENGAGEMENT_DIR" /u:$USER /v:127.0.0.1:3389
+		$FREERDP /bpp:16 /dynamic-resolution /rfx /u:$USER /v:127.0.0.1:3389
 	fi
 }
 
@@ -192,6 +192,8 @@ restoreEngagement () {
 
 		echo ">>>> Recreating container..."
 		docker create --name "$NAME" \
+		              --cap-add SYS_ADMIN \
+		              --device /dev/fuse \
 		              --publish 127.0.0.1:3389:3389 \
 		              --tty \
 		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \

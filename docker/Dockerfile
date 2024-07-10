@@ -155,6 +155,11 @@ sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications
 
 sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
 sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
+
+# XRDP fuse tweaks
+#
+sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' /etc/xrdp/sesman.ini
+sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=true/' /etc/xrdp/sesman.ini
 SCRIPT
 if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
