@@ -159,7 +159,7 @@ sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://mark
 # XRDP fuse tweaks
 #
 sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' /etc/xrdp/sesman.ini
-sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=true/' /etc/xrdp/sesman.ini
+sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=true/'                      /etc/xrdp/sesman.ini
 SCRIPT
 if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
