@@ -201,7 +201,15 @@ ln --symbolic --force \$HOME/.face \$HOME/.face.icon
 
 head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
 cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
+  <entry key="free.suite.alertsdisabledforjre-1849443513" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-2220309211" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-277690372" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-3003353162" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-3187814639" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-4147451139" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-439594872" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-492727137" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
   <entry key="free.suite.feedbackReportingEnabled" value="false"/>
   <entry key="eulacommunity" value="4"/>
