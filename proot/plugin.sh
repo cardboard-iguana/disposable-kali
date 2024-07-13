@@ -40,6 +40,8 @@ distro_setup() {
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
+	    scrot \
+	    tumbler \
 		xorg \
 		yarnpkg
 
