@@ -49,7 +49,6 @@ apt install --quiet --assume-yes \
     openssh-client \
     openvpn \
     recordmydesktop \
-    scrot \
     tumbler \
     xorg \
     xorgxrdp \
