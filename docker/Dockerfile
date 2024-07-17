@@ -50,6 +50,7 @@ apt install --quiet --assume-yes \
     openvpn \
     recordmydesktop \
     tumbler \
+    uuid-runtime \
     xorg \
     xorgxrdp \
     xrdp \

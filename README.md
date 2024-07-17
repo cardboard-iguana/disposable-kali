@@ -28,6 +28,7 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 
 ### Linux
 - [Docker CE](https://docs.docker.com/engine/install/debian/)
+- `uuidgen`
 - [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
 - [Zenity](https://gitlab.gnome.org/GNOME/zenity)
 
@@ -48,7 +49,7 @@ usermod --append --groups docker $USER
 # Install additional tools. Alternately, replace `freerdp2-x11` with
 # `freerdp2-wayland`.
 #
-apt install freerdp2-x11 zenity
+apt install freerdp2-x11 uuid-runtime zenity
 ```
 
 Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
@@ -99,6 +100,8 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
 - `$CONTROL_SCRIPT archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
+
+**Note:** On macOS, the first time you start an environment's desktop, you will be asked to grant either the Terminal app (if calling `$CONTROL_SCRIPT` directly) or `env` "Accessibility Access". You will need to do this in the System Settings app and then re-connect. On the next run, you will be asked to grant access to the "System Events" app. You should not be asked for these permissions again, or for subsequent engagements.
 
 ### Android
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement environment.

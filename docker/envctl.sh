@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 NAME="{{environment-name}}"
+TOKEN="{{connection-token}}"
 
 # Core engagement files/data.
 #
@@ -64,6 +65,8 @@ scriptHelp () {
 # Start/Stop container.
 #
 startEngagement () {
+	mkdir --parents $HOME/.cache/disposable-kali
+
 	if [[ "$STATE" != "running" ]]; then
 		docker start "$NAME"
 		waitForIt
@@ -89,7 +92,9 @@ startGUI () {
 	startEngagement
 
 	if [[ "$(uname)" == "Darwin" ]]; then
-		cat > /tmp/"${NAME}.rdp" <<- EOF
+		mkdir --parents $HOME/.cache/disposable-kali
+
+		cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
 		smart sizing:i:1
 		screen mode id:i:2
 		prompt for credentials on client:i:1
@@ -109,14 +114,31 @@ startGUI () {
 		username:s:$USER
 		allow font smoothing:i:1
 		EOF
-		open /tmp/"${NAME}.rdp"
+
+		open $HOME/.cache/disposable-kali/kali.rdp
+
+		osascript - <<- EOF
+		tell application "Microsoft Remote Desktop"
+			activate
+			tell application "System Events"
+				repeat until (exists window "Microsoft Remote Desktop" of application process "Microsoft Remote Desktop")
+					delay 1
+				end repeat
+			end tell
+			activate
+		end tell
+
+		tell application "System Events" to keystroke "$TOKEN"
+
+		tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Microsoft Remote Desktop"
+		EOF
 	else
 		if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
 			FREERDP=wlfreerdp
 		else
 			FREERDP=xfreerdp
 		fi
-		$FREERDP /bpp:16 /dynamic-resolution /f /rfx /u:$USER /v:127.0.0.1:3389
+		$FREERDP /bpp:16 /dynamic-resolution /f /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
 	fi
 }
 

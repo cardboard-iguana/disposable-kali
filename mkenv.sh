@@ -36,88 +36,17 @@ else
 	exit 1
 fi
 
-# Gather engagement information.
-#
-if [[ "$CODE_PATH" == "docker" ]]; then
-	USER_NAME="$USER"
-elif [[ "$CODE_PATH" == "proot" ]]; then
-	USER_NAME="kali"
-else
-	echo "You should not be here."
-	exit 2
-fi
-
-if [[ "$CODE_PATH" == "docker" ]]; then
-	GOOD_PASSWORD="no"
-	while [[ "$GOOD_PASSWORD" == "no" ]]; do
-		read -s -p "What password should be used for the non-root container user (not echoed): " PASSWORD_ONE
-		echo ""
-		read -s -p "Retype the password above to confirm (not echoed): " PASSWORD_TWO
-		echo ""
-		if [[ "$PASSWORD_ONE" == "$PASSWORD_TWO" ]]; then
-			USER_PASS="$PASSWORD_ONE"
-			GOOD_PASSWORD="yes"
-		else
-			echo ""
-			echo "Supplied passwords do not match!"
-			echo ""
-		fi
-	done
-elif [[ "$CODE_PATH" == "proot" ]]; then
-	USER_PASS="********"
-else
-	echo "You should not be here."
-	exit 2
-fi
-
 # Determine build variables.
 #
 if [[ "$CODE_PATH" == "docker" ]]; then
 	SCRIPT="$HOME/.local/bin/${NAME}.sh"
 	ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	SCRIPT="$HOME/bin/${NAME}.sh"
 	ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
-	TIMEZONE="$(getprop persist.sys.timezone)"
 else
 	echo "You should not be here."
 	exit 2
-fi
-
-# Confirm details.
-#
-echo ""
-echo "The following settings will be used:"
-echo ""
-echo "  Engagement Name: $NAME"
-echo "  User Name:       $USER_NAME"
-if [[ "$CODE_PATH" == "docker" ]]; then
-	echo "  Password:        ********"
-fi
-echo "  Time Zone:       $TIMEZONE"
-echo ""
-echo "The following engagement objects will be created:"
-echo ""
-if [[ "$CODE_PATH" == "docker" ]]; then
-	echo "  Docker Container:     $NAME (kalilinux/kali-rolling)"
-elif [[ "$CODE_PATH" == "proot" ]]; then
-	echo "  Proot Distribution:   $NAME (kali-nethunter/current)"
-else
-	echo "You should not be here."
-	exit 2
-fi
-echo "  Engagement Directory: $ENGAGEMENT_DIR"
-echo "  Control Script:       $SCRIPT"
-echo ""
-read -n 1 -p "Is this correct? (y/N) " CONFIRMATION
-echo ""
-
-if [[ ! "$CONFIRMATION" =~ ^[yY]$ ]]; then
-	echo "Engagement creation aborted."
-	exit
-else
-	echo ""
 fi
 
 # Create necessary directories.
@@ -154,12 +83,15 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
 	if [[ "$(uname)" == "Darwin" ]]; then
-		IS_MACOS="yes"
+		export IS_MACOS="yes"
+		export USER_PASS="$(uuidgen | tr "[:upper:]" "[:lower:]")"
 	else
-		IS_MACOS="no"
+		export IS_MACOS="no"
+		export USER_PASS="$(uuidgen --random)"
 	fi
 
-	export IS_MACOS USER_NAME USER_PASS TIMEZONE
+	export USER_NAME="$USER"
+	export TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 
 	cat docker/Dockerfile | docker build \
 		--no-cache \
@@ -177,7 +109,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
 	                "$NAME"
 
-	sed "s/{{environment-name}}/$NAME/" docker/envctl.sh > "$SCRIPT"
+	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" docker/envctl.sh > "$SCRIPT"
 
 	if [[ "$IS_MACOS" == "yes" ]]; then
 		mkdir --parents $HOME/Applications
@@ -235,9 +167,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	#
 	proot-distro login "$NAME" -- bash -c "su postgres --command=\"pg_createcluster 16 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
 
-	echo ""
-	echo "Please set the password for the non-root (kali) user..."
-	proot-distro login "$NAME" -- passwd kali
+	proot-distro login "$NAME" -- bash -c "echo \"kali:\$(uuidgen --random)\" | chpasswd"
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 

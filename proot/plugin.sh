@@ -41,6 +41,7 @@ distro_setup() {
 		pm-utils \
 		recordmydesktop \
 	    tumbler \
+		uuid-runtime \
 		xorg \
 		yarnpkg
 
