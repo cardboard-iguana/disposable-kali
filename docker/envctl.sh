@@ -91,12 +91,12 @@ startGUI () {
 	if [[ "$(uname)" == "Darwin" ]]; then
 		cat > /tmp/"${NAME}.rdp" <<- EOF
 		smart sizing:i:1
-		screen mode id:i:1
+		screen mode id:i:2
 		prompt for credentials on client:i:1
 		redirectsmartcards:i:0
 		redirectclipboard:i:1
 		forcehidpioptimizations:i:0
-		full address:s:localhost
+		full address:s:127.0.0.1
 		drivestoredirect:s:*
 		networkautodetect:i:0
 		redirectprinters:i:0
@@ -116,7 +116,7 @@ startGUI () {
 		else
 			FREERDP=xfreerdp
 		fi
-		$FREERDP /bpp:16 /dynamic-resolution /rfx /u:$USER /v:127.0.0.1:3389
+		$FREERDP /bpp:16 /dynamic-resolution /f /rfx /u:$USER /v:127.0.0.1:3389
 	fi
 }
 
