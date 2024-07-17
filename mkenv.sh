@@ -51,8 +51,8 @@ fi
 
 # Create necessary directories.
 #
-mkdir --parents "$ENGAGEMENT_DIR"
-mkdir --parents "$(dirname "$SCRIPT")"
+mkdir -p "$ENGAGEMENT_DIR"
+mkdir -p "$(dirname "$SCRIPT")"
 
 # Build container/proot.
 #
@@ -112,7 +112,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" docker/envctl.sh > "$SCRIPT"
 
 	if [[ "$IS_MACOS" == "yes" ]]; then
-		mkdir --parents $HOME/Applications
+		mkdir -p $HOME/Applications
 		cp docker/launcher.tar /tmp
 		(
 			cd /tmp
@@ -127,10 +127,10 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 
 		dockutil --add $HOME/Applications/"${NAME}.app"
 	else
-		mkdir --parents $HOME/.local/share/icons
+		mkdir -p $HOME/.local/share/icons
 		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
 
-		mkdir --parents $HOME/.local/share/applications
+		mkdir -p $HOME/.local/share/applications
 		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" docker/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
 	fi
 
@@ -171,10 +171,10 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 
-	mkdir --parents $HOME/.shortcuts/icons
+	mkdir -p $HOME/.shortcuts/icons
 	cp icons/wikimedia-kali-logo.png $HOME/.shortcuts/icons/"${NAME}.sh.png"
 
-	mkdir --parents $HOME/.shortcuts/tasks
+	mkdir -p $HOME/.shortcuts/tasks
 	sed "s/{{environment-name}}/$NAME/" proot/widget.sh > $HOME/.shortcuts/tasks/"${NAME}.sh"
 else
 	echo "You should not be here."
