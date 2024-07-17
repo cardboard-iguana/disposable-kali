@@ -65,7 +65,7 @@ scriptHelp () {
 # Start/Stop container.
 #
 startEngagement () {
-	mkdir --parents $HOME/.cache/disposable-kali
+	mkdir -p $HOME/.cache/disposable-kali
 
 	if [[ "$STATE" != "running" ]]; then
 		docker start "$NAME"
@@ -92,7 +92,7 @@ startGUI () {
 	startEngagement
 
 	if [[ "$(uname)" == "Darwin" ]]; then
-		mkdir --parents $HOME/.cache/disposable-kali
+		mkdir -p $HOME/.cache/disposable-kali
 
 		cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
 		smart sizing:i:1
@@ -174,7 +174,7 @@ deleteEngagement () {
 		removeContainerImagePair
 
 		echo ">>>> Deleting engagement directory..."
-		rm --recursive --force "$ENGAGEMENT_DIR"
+		rm -rf "$ENGAGEMENT_DIR"
 
 		echo ""
 		echo "Engagement $NAME has been deleted."
@@ -222,24 +222,24 @@ restoreEngagement () {
 		                "$NAME"
 
 		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.sh" ]]; then
-			mkdir --parents "$(dirname "$SCRIPT")"
-			cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
+			mkdir -p "$(dirname "$SCRIPT")"
+			cp -L "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
 		fi
 		if [[ "$(uname)" == "Darwin" ]]; then
 			if [[ -f "$ENGAGEMENT_DIR/${NAME}.app.tar.gz" ]]; then
-				mkdir --parents "$HOME/Applications"
+				mkdir -p "$HOME/Applications"
 				tar -xzf "${NAME}.app.tar.gz"
 				mv "${NAME}.app" "$HOME/Applications"
 				dockutil --add $HOME/Applications/"${NAME}.app"
 			fi
 		else
 			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
-				mkdir --parents "$HOME/.local/share/icons"
-				cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
+				mkdir -p "$HOME/.local/share/icons"
+				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
 			fi
 			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
-				mkdir --parents "$HOME/.local/share/applications"
-				cp --dereference "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+				mkdir -p "$HOME/.local/share/applications"
+				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
 			fi
 		fi
 
@@ -261,7 +261,7 @@ commitToImage () {
 	echo ">>>> Exporting temporary image..."
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
-	mkdir --parents "$BACKUP_DIR"
+	mkdir -p "$BACKUP_DIR"
 	docker save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
 	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
 
@@ -301,13 +301,13 @@ removeContainerImagePair () {
 	docker image prune --force
 
 	echo ">>>> Removing control files..."
-	rm --force "$SCRIPT"
+	rm -f "$SCRIPT"
 	if [[ "$(uname)" == "Darwin" ]]; then
-		rm --force --recursive "$HOME/Applications/${NAME}.app"
+		rm -rf "$HOME/Applications/${NAME}.app"
 		dockutil --remove $HOME/Applications/"${NAME}.app"
 	else
-		rm --force "$HOME/.local/share/applications/${NAME}.desktop"
-		rm --force "$HOME/.local/share/icons/${NAME}.png"
+		rm -f "$HOME/.local/share/applications/${NAME}.desktop"
+		rm -f "$HOME/.local/share/icons/${NAME}.png"
 	fi
 }
 
