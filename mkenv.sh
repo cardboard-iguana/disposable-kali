@@ -83,23 +83,34 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
 	if [[ "$(uname)" == "Darwin" ]]; then
-		export IS_MACOS="yes"
-		export USER_PASS="$(uuidgen | tr "[:upper:]" "[:lower:]")"
+		IS_MACOS="yes"
+		USER_PASS="$(uuidgen | tr "[:upper:]" "[:lower:]")"
 	else
-		export IS_MACOS="no"
-		export USER_PASS="$(uuidgen --random)"
+		IS_MACOS="no"
+		USER_PASS="$(uuidgen --random)"
 	fi
 
-	export USER_NAME="$USER"
-	export TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
+	USER_NAME="$USER"
+	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
+
+	BUILD_CONFIG="$(mktemp)"
+
+	cat > "$BUILD_CONFIG" <<- EOF
+	export IS_MACOS="$IS_MACOS"
+	export USER_PASS="$USER_PASS"
+	export USER_NAME="$USER_NAME"
+	export TIMEZONE="$TIMEZONE"
+	EOF
 
 	cat docker/Dockerfile | docker build \
 		--no-cache \
-		--secret id=IS_MACOS \
-		--secret id=USER_NAME \
-		--secret id=USER_PASS \
-		--secret id=TIMEZONE \
+		--secret id=config,src="$BUILD_CONFIG" \
 		--tag "$NAME" -
+
+	rm "$BUILD_CONFIG"
+
+	mkdir -p $HOME/.cache/disposable-kali
+	echo "$TIMEZONE" > $HOME/.cache/disposable-kali/localtime
 
 	docker create --name "$NAME" \
 	              --cap-add SYS_ADMIN \
@@ -107,6 +118,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --publish 127.0.0.1:3389:3389 \
 	              --tty \
 	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
+	              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 	                "$NAME"
 
 	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" docker/envctl.sh > "$SCRIPT"
@@ -133,8 +145,6 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 		mkdir -p $HOME/.local/share/applications
 		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" docker/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
 	fi
-
-	unset IS_MACOS USER_NAME USER_PASS TIMEZONE
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	# PRoot Distro engages in some serious nannying around pentesting
 	# distros. While I understand the Termux project's desire not to

@@ -66,6 +66,7 @@ scriptHelp () {
 #
 startEngagement () {
 	mkdir -p $HOME/.cache/disposable-kali
+	readlink /etc/localtime | sed 's#.*/zoneinfo/##' > $HOME/.cache/disposable-kali/localtime
 
 	if [[ "$STATE" != "running" ]]; then
 		docker start "$NAME"
@@ -213,12 +214,16 @@ restoreEngagement () {
 		docker rmi "$NAME:$CURRENT_TAG"
 
 		echo ">>>> Recreating container..."
+		mkdir -p $HOME/.cache/disposable-kali
+		readlink /etc/localtime | sed 's#.*/zoneinfo/##' > $HOME/.cache/disposable-kali/localtime
+
 		docker create --name "$NAME" \
 		              --cap-add SYS_ADMIN \
 		              --device /dev/fuse \
 		              --publish 127.0.0.1:3389:3389 \
 		              --tty \
 		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
+		              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 		                "$NAME"
 
 		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.sh" ]]; then

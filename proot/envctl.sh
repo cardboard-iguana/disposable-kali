@@ -71,17 +71,19 @@ scriptHelp () {
 #
 startCLI () {
 	unNerfProotDistro
+	updateTimeZone
 
 	proot-distro login "$NAME" --user kali --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/sbin/tui.sh
 }
 
 startGUI () {
+	unNerfProotDistro
+	updateTimeZone
+
 	termux-x11 :0 &> /dev/null &
 	virgl_test_server_android --angle-gl &> /dev/null &
 	pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
 	am start-activity -W com.termux.x11/com.termux.x11.MainActivity
-
-	unNerfProotDistro
 
 	proot-distro login "$NAME" --user kali --shared-tmp --bind ${ENGAGEMENT_DIR}:/home/kali/Documents -- /usr/local/sbin/gui.sh
 
@@ -211,6 +213,12 @@ prootRemove () {
 	rm --force $HOME/.shortcuts/icons/"${NAME}.sh.png"
 	rm --force $HOME/.shortcuts/tasks/"${NAME}.sh"
 	rm --force "$SCRIPT"
+}
+
+# Helper function that updates the guest's timezone.
+#
+updateTimeZone () {
+	proot-distro login "$NAME" -- bash -c "ln --symbolic --force /usr/share/zoneinfo/$(getprop persist.sys.timezone) /etc/localtime"
 }
 
 # PRoot Distro engages in some serious nannying around pentesting

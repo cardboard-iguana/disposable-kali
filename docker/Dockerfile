@@ -79,8 +79,12 @@ EOF
 
 # Set time zone
 #
-RUN --mount=type=secret,id=TIMEZONE <<EOF
-ln --symbolic --force /usr/share/zoneinfo/$(cat /run/secrets/TIMEZONE) /etc/localtime
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
+
+ln --symbolic --force /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Some things expect a `yarn` command, rather than `yarnpkg`
@@ -113,7 +117,9 @@ EOF
 
 # Create (and run) system update cleanup script
 #
-RUN --mount=type=secret,id=IS_MACOS <<EOF
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
+
 cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -163,7 +169,7 @@ sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://mark
 sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' /etc/xrdp/sesman.ini
 sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=true/'                      /etc/xrdp/sesman.ini
 SCRIPT
-if [ "$(cat /run/secrets/IS_MACOS)" = "yes" ]; then
+if [ "$IS_MACOS" = "yes" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
 
 	# Fix scroll on macOS
@@ -177,11 +183,15 @@ fi
 chmod 755 /usr/local/sbin/system-update-cleanup.sh
 
 /usr/local/sbin/system-update-cleanup.sh
+
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Create update script (useful for long-running containiners)
 #
-RUN --mount=type=secret,id=IS_MACOS <<EOF
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
+
 cat > /usr/local/bin/update.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -220,6 +230,8 @@ CONF
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
+
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # We need a custom script to make sure that XFCE's background is set
@@ -251,11 +263,15 @@ EOF
 
 # Create Docker startup script
 #
-RUN --mount=type=secret,id=USER_NAME <<EOF
-export USER_NAME="$(cat /run/secrets/USER_NAME)"
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
 
 cat > /usr/local/sbin/docker-init.sh << SCRIPT
 #!/usr/bin/env bash
+
+if [[ -f /etc/localtime.host ]]; then
+	ln --symbolic --force "/usr/share/zoneinfo/$(cat /etc/localtime.host)" /etc/localtime
+fi
 
 /etc/init.d/dbus start
 /etc/init.d/postgresql start
@@ -270,7 +286,7 @@ SCRIPT
 
 chmod 755 /usr/local/sbin/docker-init.sh
 
-unset USER_NAME
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Generate local self-signed certificate (for PostgreSQL)
@@ -292,25 +308,26 @@ EOF
 
 # Create our normal user
 #
-RUN --mount=type=secret,id=USER_NAME --mount=type=secret,id=USER_PASS <<EOF
-export USER_NAME="$(cat /run/secrets/USER_NAME)"
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
 
 useradd --create-home \
         --shell /usr/bin/bash \
         --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video \
           $USER_NAME
 
-echo "${USER_NAME}:$(cat /run/secrets/USER_PASS)" | chpasswd
+echo "${USER_NAME}:${USER_PASS}" | chpasswd
 
 echo "$USER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER_NAME
 
-unset USER_NAME
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Home directory setup
 #
-RUN --mount=type=secret,id=USER_NAME <<EOF
-export USER_NAME="$(cat /run/secrets/USER_NAME)"
+RUN --mount=type=secret,id=config <<EOF
+eval "$(cat /run/secrets/config)"
+
 export USER_HOME="/home/$USER_NAME"
 
 cp --archive --force --no-target-directory /etc/skel $USER_HOME
@@ -509,7 +526,7 @@ mkdir --parents $USER_HOME/Documents
 
 chown --recursive $USER_NAME:$USER_NAME $USER_HOME
 
-unset USER_NAME USER_HOME
+unset IS_MACOS USER_PASS USER_NAME TIMEZONE USER_HOME
 EOF
 
 # Docker exec/start
