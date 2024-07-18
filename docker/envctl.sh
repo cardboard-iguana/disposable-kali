@@ -126,6 +126,7 @@ startGUI () {
 					delay 1
 				end repeat
 			end tell
+			delay 1
 			activate
 		end tell
 
