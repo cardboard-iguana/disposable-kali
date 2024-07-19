@@ -40,7 +40,6 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-core \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
-    fuse \
     kali-desktop-xfce \
     kali-undercover \
     metasploit-framework \
@@ -164,10 +163,13 @@ sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications
 sed -i 's#"serviceUrl": "https://open-vsx.org/vscode/gallery",#"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",#' /usr/lib/code-oss/resources/app/product.json
 sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://marketplace.visualstudio.com/items"#'                                                                                            /usr/lib/code-oss/resources/app/product.json
 
-# XRDP fuse tweaks
+# Xrdp with fuse doesn't work under Podman (and requires an
+# uncomfortable number of permissions in Docker); since we already
+# share a directory with the host and it's not necessary for normal
+# cut-and-paste, we just disable it here
 #
 sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' /etc/xrdp/sesman.ini
-sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=true/'                      /etc/xrdp/sesman.ini
+sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=false/'                     /etc/xrdp/sesman.ini
 SCRIPT
 if [ "$IS_MACOS" = "yes" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
@@ -261,12 +263,12 @@ SCRIPT
 chmod 755 /usr/local/bin/set-background-to-solid-color.sh
 EOF
 
-# Create Docker startup script
+# Create container startup script
 #
 RUN --mount=type=secret,id=config <<EOF
 eval "$(cat /run/secrets/config)"
 
-cat > /usr/local/sbin/docker-init.sh << SCRIPT
+cat > /usr/local/sbin/init.sh << SCRIPT
 #!/usr/bin/env bash
 
 if [[ -f /etc/localtime.host ]]; then
@@ -284,7 +286,7 @@ chown --recursive $USER_NAME:$USER_NAME /home/$USER_NAME
 /usr/bin/bash
 SCRIPT
 
-chmod 755 /usr/local/sbin/docker-init.sh
+chmod 755 /usr/local/sbin/init.sh
 
 unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
@@ -529,8 +531,8 @@ chown --recursive $USER_NAME:$USER_NAME $USER_HOME
 unset IS_MACOS USER_PASS USER_NAME TIMEZONE USER_HOME
 EOF
 
-# Docker exec/start
+# Container exec/start
 #
 EXPOSE 3389
 ENTRYPOINT ["/usr/bin/bash"]
-CMD ["/usr/local/sbin/docker-init.sh"]
+CMD ["/usr/local/sbin/init.sh"]

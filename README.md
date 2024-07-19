@@ -1,33 +1,40 @@
 # Displosable Kali Linux
-Disposable [Kali Linux](https://kali.org) environments using [Docker](https://www.docker.com/) (macOS & Linux) or [PRoot Distro](https://github.com/termux/proot-distro) (Android).
+Disposable [Kali Linux](https://kali.org) environments using [Podman](https://podman.io/) (macOS & Linux) or [PRoot Distro](https://github.com/termux/proot-distro) (Android).
 
 This setup is probably sufficiently opinionated that it won't be useful out-of-the box for `$RANDOM_HACKER`. However, it is provided here as a resource for others to study, fork, and draw inspiration from. (Also, I'm not adverse to integrating other folks' suggestions! I'm just not going to make any changes that either make my own use cases more complicated or this repo more difficult to maintain in general. Within those bounds though, issues and pull requests are welcome!)
 
 ## Prerequisits
 ### macOS
 - [dockutil](https://github.com/kcrawford/dockutil)
-- [Rancher Desktop](https://rancherdesktop.io/)
+- [Podman](https://podman.io/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
 
-Using [Homebrew](https://brew.sh/):
+The use of [Homebrew](https://brew.sh) to install these tools is *highly* recommended. You can probably make things work without it, but you'll need to make sure your PATH is correct at the *GUI* level!
 
 ```bash
-# Install Rancher Desktop and Microsoft Remote Desktop.
+# Make sure that command-line developer tools are available
 #
-brew install dockutil microsoft-remote-desktop rancher
+xcode-select --install
+
+# Install Homebrew (`brew` path will be /usr/local/bin on x86_64 systems)
+#
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+echo "eval \"\$(/opt/homebrew/bin/brew shellenv)\"" >> $HOME/.zshrc
+eval "$(/opt/homebrew/bin/brew shellenv)"
+brew analytics off
+
+# Install actual prerequisits
+#
+brew install dockutil microsoft-remote-desktop podman
 ```
 
-Rancher Desktop must be run once before trying to deploy a disposable environment. Recommended prences tweaks:
-
-- Application → Behavior → Startup → Automatically start at login → On
-- Application → Behavior → Background → Start in the background → On
-- Virtual Machine → Volumes → Mount Type → virtiofs
-- Virtual Machine → Emulation → Virtual Machine Type → VZ
+**Note:** Podman is weird about how the default virtual machine gets set. If you use multiple virtual machines (*i.e.*, `podman machine list` has more entries than just `podman-machine-default`), you'll probably periodically get errors where the `$CONTROL_SCRIPT` can't find your container. If you see this, try resetting the default VM using ``podman system connection default podman-machine-default`.
 
 Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 
 ### Linux
-- [Docker CE](https://docs.docker.com/engine/install/debian/)
+- [bc](https://www.gnu.org/software/bc/)
+- [Podman](https://podman.io/)
 - `uuidgen`
 - [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
 - [Zenity](https://gitlab.gnome.org/GNOME/zenity)
@@ -35,19 +42,8 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 On [Debian](https://debian.org/):
 
 ```bash
-# Install the most recent version of Docker.
-#
-curl --silent --location https://download.docker.com/linux/debian/gpg | gpg --dearmor > /usr/share/keyrings/docker.gpg
-
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian $(grep -E '^VERSION_CODENAME=' /etc/os-release | sed 's/.*=//') stable" > /etc/apt/sources.list.d/docker.list
-
-apt update
-apt install containerd.io docker-buildx-plugin docker-ce docker-ce-cli docker-compose-plugin
-
-usermod --append --groups docker $USER
-
-# Install additional tools. Alternately, replace `freerdp2-x11` with
-# `freerdp2-wayland`.
+# Install additional required tools. Alternately, replace
+# `freerdp2-x11` with `freerdp2-wayland`.
 #
 apt install freerdp2-x11 uuid-runtime zenity
 ```
@@ -87,7 +83,7 @@ You will almost certainly want to enable Developer Mode and then set the followi
 Finally, make sure that `$HOME/bin` exists and is in your Termux `$PATH`.
 
 ## Usage
-To create a new engagement (Docker/PRoot image/container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
+To create a new engagement (container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
 
 At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below. A desktop launcher will also be created allowing for quick access; be aware that on macOS and Linux, the container will *not* terminate when finished, and must be manually stopped using `$CONTROL_SCRIPT stop`!
 
@@ -110,6 +106,3 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT restore`: Replaces the current engagement environment from the most recent backup in `$ENGAGEMENT_DIR/Backups/`.
 - `$CONTROL_SCRIPT archive`: Backup the engagement environment, delete it, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
-
-## Todo
-- [ ] Get folder redirection working for Linux/macOS (RDP to Docker container).

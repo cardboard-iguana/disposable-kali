@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-NAME="{{environment-name}}"
-
-export PATH="$HOME/.rd/bin:$PATH"
-
-$HOME/.local/bin/"${NAME}.sh" launcher

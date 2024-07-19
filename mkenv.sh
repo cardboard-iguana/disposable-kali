@@ -2,8 +2,8 @@
 
 # Sanity check.
 #
-if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
-	if [[ ! -f docker/envctl.sh ]] || [[ ! -f docker/Dockerfile ]]; then
+if [[ -z "$PREFIX" ]] && [[ -n "$(which podman)" ]]; then
+	if [[ ! -f container/envctl.sh ]] || [[ ! -f container/Dockerfile ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
 		exit 1
 	fi
@@ -11,7 +11,7 @@ if [[ -z "$PREFIX" ]] && [[ -n "$(which docker)" ]]; then
 		echo "$HOME/.local/bin must bin in your PATH!"
 		exit 1
 	fi
-	CODE_PATH="docker"
+	CODE_PATH="podman"
 elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
 	if [[ ! -f proot/envctl.sh ]] || [[ ! -f proot/plugin.sh ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
@@ -23,7 +23,7 @@ elif [[ -n "$PREFIX" ]] && [[ -n "$(which proot-distro)" ]]; then
 	fi
 	CODE_PATH="proot"
 else
-	echo "No usable install of Docker or PRoot Distro found!"
+	echo "No usable install of Podman or PRoot Distro found!"
 	exit 1
 fi
 
@@ -38,7 +38,7 @@ fi
 
 # Determine build variables.
 #
-if [[ "$CODE_PATH" == "docker" ]]; then
+if [[ "$CODE_PATH" == "podman" ]]; then
 	SCRIPT="$HOME/.local/bin/${NAME}.sh"
 	ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 elif [[ "$CODE_PATH" == "proot" ]]; then
@@ -56,27 +56,87 @@ mkdir -p "$(dirname "$SCRIPT")"
 
 # Build container/proot.
 #
-if [[ "$CODE_PATH" == "docker" ]]; then
-	# Build Docker container.
+if [[ "$CODE_PATH" == "podman" ]]; then
+	# Init the Podman VM, if necessary.
 	#
-	# Note the use of --no-cache for `docker build`. There are two
-	# reasons for this:
+	if [[ "$(uname)" == "Darwin" ]]; then
+		PODMAN_MACHINE_NAME="$(podman machine list --format "{{.Default}}\t{{.Name}}" 2> /dev/null | grep -E '^true' | cut -f 2 | sed 's/\*$//')"
+		PODMAN_MACHINE_STATE="$(podman machine inspect --format "{{.State}}" "$PODMAN_MACHINE_NAME" 2> /dev/null)"
+
+		if [[ -z "$PODMAN_MACHINE_NAME" ]]; then
+			TOTAL_AVAIL_MEMORY=$(bc -le "mem = (($(sysctl hw.memsize | sed 's/.*: //') / 1024) / 1024) / 2; scale = 0; mem / 1")
+			if [[ $TOTAL_AVAIL_MEMORY -ge 32768 ]]; then
+				VM_MEMORY=32768
+			elif [[ $TOTAL_AVAIL_MEMORY -ge 16384 ]]; then
+				VM_MEMORY=16384
+			elif [[ $TOTAL_AVAIL_MEMORY -ge 8192 ]]; then
+				VM_MEMORY=8192
+			elif [[ $TOTAL_AVAIL_MEMORY -ge 4096 ]]; then
+				VM_MEMORY=4096
+			else
+				echo "At least 8 GB of memory is required!"
+				exit 1
+			fi
+
+			TOTAL_AVAIL_CPU=$(bc -le "cpu = $(sysctl hw.ncpu | sed 's/.*: //') / 2; scale = 0; cpu / 1")
+			if [[ $TOTAL_AVAIL_CPU -ge 16 ]]; then
+				VM_CPU=16
+			elif [[ $TOTAL_AVAIL_CPU -ge 8 ]]; then
+				VM_CPU=8
+			elif [[ $TOTAL_AVAIL_CPU -ge 4 ]]; then
+				VM_CPU=4
+			elif [[ $TOTAL_AVAIL_CPU -ge 2 ]]; then
+				VM_CPU=2
+			else
+				echo "At least 4 CPU cores are required!"
+				exit 1
+			fi
+
+			TOTAL_AVAIL_DISK=$(bc -le "disk = (($(df -Pk $HOME | tail -1 | sed 's/[ ]\{1,\}/\t/g' | cut -f 4) / 1024) / 1024) * 0.64; scale = 0; disk / 1")
+			if [[ $TOTAL_AVAIL_DISK -ge 512 ]]; then
+				VM_DISK=512
+			elif [[ $TOTAL_AVAIL_DISK -ge 256 ]]; then
+				VM_DISK=256
+			elif [[ $TOTAL_AVAIL_DISK -ge 128 ]]; then
+				VM_DISK=128
+			else
+				echo "At least 200 GB of free disk space is required!"
+				exit 1
+			fi
+
+			podman machine init --cpus=$VM_CPU --disk-size=$VM_DISK --memory=$VM_MEMORY --now
+
+			# Fix https://github.com/containers/podman/issues/22678.
+			#
+			if [[ $(podman machine ssh 'sudo rpm-ostree status' | grep -c 'podman-machine-os:5.0') -gt 0 ]]; then
+				podman machine os apply quay.io/podman/machine-os:5.1 --restart
+			fi
+
+			# Make sure that auto-updates are disabled
+			#
+			podman machine ssh 'sudo systemctl disable --now zincati.service'
+
+			# Perform an update (updates roll out every 14 days, so maybe once per week?)
+			#
+			podman machine ssh 'sudo rpm-ostree upgrade'
+			podman machine stop
+			podman machine start --no-info
+
+			mkdir -p $HOME/.cache/containerized-engagements
+			date "+%s" > $HOME/.cache/containerized-engagements/machine-update
+		elif [[ "$PODMAN_MACHINE_STATE" != "running" ]]; then
+			podman machine start --no-info
+		fi
+	fi
+
+	# Build container.
 	#
-	# Firstly, username, timezone, and password changes don't
+	# Note the use of --no-cache for `podman build`. The reason here is
+	# that changing the username, timezone, and password changes doesn't
 	# necessarily invalidate the build cache, since secrets aren't
-	# exposed (generally a good thing). While one could attempt to
-	# cachebust using, say, a SHA256 sum of these values, such a hash
-	# would still be deterministic (and recorded in Docker's build
-	# logs), and thus the data could be recovered by brute-forcing.
-	# Adding a salt would just result in the cache being invalidated on
-	# every run anyway, so why go through the extra effort?
-	#
-	#     https://github.com/moby/moby/issues/1996#issuecomment-185872769
-	#
-	# Secondly, the fetching packages to install initially really
-	# shouldn't be cached even though it's the longest, most annoying
-	# step (upwards of ~15 minutes), since doing so can cause us to miss
-	# out on security updates.
+	# exposed (generally a good thing). While we could try to cache bust
+	# out way out of the situation, we still want to grab the latest
+	# packages, so most of our build will be invalid anyway.
 	#
 	# Building without a cache isn't quite as bad as it sounds, because
 	# in practice most of the time a new engagement is only going to be
@@ -101,7 +161,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	export TIMEZONE="$TIMEZONE"
 	EOF
 
-	cat docker/Dockerfile | docker build \
+	cat container/Dockerfile | podman build \
 		--no-cache \
 		--secret id=config,src="$BUILD_CONFIG" \
 		--tag "$NAME" -
@@ -111,7 +171,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	mkdir -p $HOME/.cache/disposable-kali
 	echo "$TIMEZONE" > $HOME/.cache/disposable-kali/localtime
 
-	docker create --name "$NAME" \
+	podman create --name "$NAME" \
 	              --cap-add SYS_ADMIN \
 	              --device /dev/fuse \
 	              --publish 127.0.0.1:3389:3389 \
@@ -120,11 +180,21 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 	                "$NAME"
 
-	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" docker/envctl.sh > "$SCRIPT"
+	# Shut down the Podman VM, unless it's still being used for something.
+	#
+	if [[ "$(uname)" == "Darwin" ]]; then
+		if [[ $(podman container list --format "{{.State}}" | grep -c "running") -eq 0 ]]; then
+			podman machine stop
+		fi
+	fi
+
+	# Setup control script and launcher.
+	#
+	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" container/envctl.sh > "$SCRIPT"
 
 	if [[ "$IS_MACOS" == "yes" ]]; then
 		mkdir -p $HOME/Applications
-		cp docker/launcher.tar /tmp
+		cp container/launcher.tar /tmp
 		(
 			cd /tmp
 			tar -xvf launcher.tar
@@ -142,7 +212,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
 
 		mkdir -p $HOME/.local/share/applications
-		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" docker/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
+		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" container/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
 	fi
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	# PRoot Distro engages in some serious nannying around pentesting
