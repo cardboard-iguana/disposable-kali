@@ -90,7 +90,6 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 		USER_PASS="$(uuidgen --random)"
 	fi
 
-	USER_NAME="$USER"
 	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 
 	BUILD_CONFIG="$(mktemp)"
@@ -98,7 +97,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	cat > "$BUILD_CONFIG" <<- EOF
 	export IS_MACOS="$IS_MACOS"
 	export USER_PASS="$USER_PASS"
-	export USER_NAME="$USER_NAME"
+	export USER_NAME="$USER"
 	export TIMEZONE="$TIMEZONE"
 	EOF
 
@@ -117,7 +116,7 @@ if [[ "$CODE_PATH" == "docker" ]]; then
 	              --device /dev/fuse \
 	              --publish 127.0.0.1:3389:3389 \
 	              --tty \
-	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER_NAME/Documents \
+	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
 	              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 	                "$NAME"
 

@@ -4,4 +4,4 @@ NAME="{{environment-name}}"
 
 export PATH="$HOME/.rd/bin:$PATH"
 
-$HOME/.local/bin/"${NAME}.sh" desktop
+$HOME/.local/bin/"${NAME}.sh" launcher

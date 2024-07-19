@@ -144,6 +144,12 @@ startGUI () {
 	fi
 }
 
+# Desktop launcher functionality.
+#
+desktopLauncher () {
+	startGUI
+}
+
 # Archive Docker container and control script in ENGAGEMENT_DIR.
 #
 archiveEngagement () {
@@ -358,6 +364,9 @@ case "$1" in
 		;;
 	"desktop")
 		startGUI
+		;;
+	"launcher")
+		desktopLauncher
 		;;
 	"backup")
 		backupEngagement

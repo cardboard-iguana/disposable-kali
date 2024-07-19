@@ -14,7 +14,7 @@ Using [Homebrew](https://brew.sh/):
 ```bash
 # Install Rancher Desktop and Microsoft Remote Desktop.
 #
-brew install docutil microsoft-remote-desktop rancher
+brew install dockutil microsoft-remote-desktop rancher
 ```
 
 Rancher Desktop must be run once before trying to deploy a disposable environment. Recommended prences tweaks:
