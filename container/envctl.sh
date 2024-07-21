@@ -481,7 +481,7 @@ restoreEngagement () {
 				mkdir -p "$HOME/Applications"
 				(
 					cd "$ENGAGEMENT_DIR/Backups"
-					tar -xzf "Backups/${NAME}.app.tar.gz"
+					tar -xzf "${NAME}.app.tar.gz"
 					mv "${NAME}.app" "$HOME/Applications/"
 				)
 				dockutil --add $HOME/Applications/"${NAME}.app"
