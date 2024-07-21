@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 NAME="{{environment-name}}"
 TOKEN="{{connection-token}}"
 OS="$(uname)"
@@ -41,8 +43,6 @@ case "$1" in
 esac
 
 # Print help and exit.
-#
-# Print help.
 #
 if [[ "$CONTROL_FUNCTION" == "scriptHelp" ]]; then
 	echo "Usage: $(basename "$0") COMMAND"
@@ -132,8 +132,14 @@ fi
 #
 SCRIPT="$HOME/.local/bin/${NAME}.sh"
 ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-CONTAINER_ID="$("$PODMAN" container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
-CONTAINER_STATE="$("$PODMAN" container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
+
+if [[ "$("$PODMAN" container inspect "$NAME" 2> /dev/null)" != "[]" ]]; then
+	CONTAINER_ID="$("$PODMAN" container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
+	CONTAINER_STATE="$("$PODMAN" container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
+else
+	CONTAINER_ID=""
+	CONTAINER_STATE=""
+fi
 
 # Sanity check environment.
 #
