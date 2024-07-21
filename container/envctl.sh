@@ -2,6 +2,8 @@
 
 NAME="{{environment-name}}"
 TOKEN="{{connection-token}}"
+OS="$(uname)"
+WAIT=12
 
 # Flow control.
 #
@@ -60,14 +62,67 @@ if [[ "$CONTROL_FUNCTION" == "scriptHelp" ]]; then
 	exit
 fi
 
+# Figure out which podman we're using.
+#
+if [[ "$OS" == "Darwin" ]]; then
+	PODMAN="$(which podman 2> /dev/null)"
+else
+	if [[ -x "$HOME/.cache/disposable-kali/podman-launcher" ]]; then
+		if [[ -f "$HOME/.cache/disposable-kali/podman-launcher.podman.version" ]]; then
+			PODMAN_LAUNCHER_PODMAN_VERSION="$(cat "$HOME/.cache/disposable-kali/podman-launcher.podman.version")"
+		else
+			PODMAN_LAUNCHER_PODMAN_VERSION="$("$HOME/.cache/disposable-kali/podman-launcher" version | grep '^Version: .*' | sed 's/.* //')"
+			echo "$PODMAN_LAUNCHER_PODMAN_VERSION" > "$HOME/.cache/disposable-kali/podman-launcher.podman.version"
+		fi
+
+		if [[ -n "$(which podman 2> /dev/null)" ]]; then
+			SYSTEM_PODMAN_VERSION="$(podman version | grep '^Version: .*' | sed 's/.* //')"
+		else
+			SYSTEM_PODMAN_VERSION="0.0.0"
+		fi
+
+		MOST_RECENT_VERSION="$(echo -e "${SYSTEM_PODMAN_VERSION}\n${PODMAN_LAUNCHER_PODMAN_VERSION}" | sort --version-sort --reverse | head -1)"
+
+		if [[ "$MOST_RECENT_VERSION" == "$SYSTEM_PODMAN_VERSION" ]]; then
+			PODMAN="$(which podman)"
+		else
+			PODMAN="$HOME/.cache/disposable-kali/podman-launcher"
+		fi
+	else
+		PODMAN="$(which podman 2> /dev/null)"
+	fi
+fi
+
+if [[ -z "$PODMAN" ]]; then
+	echo "No usable install of Podman found!"
+	exit 1
+fi
+
+# Attempt to recover from a bad shutdown, which seems to be a
+# frequent issue with podman < 5.0.0 on Linux.
+#
+if [[ "$OS" == "Linux" ]]; then
+	if [[ $("$PODMAN" info 2>&1 | grep -c '.*invalid internal status, try resetting the pause process with .*podman system migrate.*') -eq 1 ]]; then
+		echo ">>>> Attempting to recover from podman internal state error..."
+		echo ">>>> (NOTE: You may be prompted for your password.)"
+		USER_ID=$(id --user)
+		[[ -d "/var/tmp/podman-static/$USER_ID"   ]] && sudo rm -rf "/var/tmp/podman-static/$USER_ID"
+		[[ -d "/var/tmp/containers-user-$USER_ID" ]] && sudo rm -rf "/var/tmp/containers-user-$USER_ID"
+		[[ -d "/var/tmp/podman-run-$USER_ID"      ]] && sudo rm -rf "/var/tmp/podman-run-$USER_ID"
+		[[ -d "/tmp/podman-static/$USER_ID"       ]] && sudo rm -rf "/tmp/podman-static/$USER_ID"
+		[[ -d "/tmp/containers-user-$USER_ID"     ]] && sudo rm -rf "/tmp/containers-user-$USER_ID"
+		[[ -d "/tmp/podman-run-$USER_ID"          ]] && sudo rm -rf "/tmp/podman-run-$USER_ID"
+	fi
+fi
+
 # Start the Podman VM, if necessary.
 #
-if [[ "$(uname)" == "Darwin" ]]; then
-	if [[ $(podman machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
+if [[ "$OS" == "Darwin" ]]; then
+	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
 		osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
 		echo ">>>> Starting Podman virtual machine..."
-		podman machine start --no-info
+		"$PODMAN" machine start --no-info
 
 		osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
 	fi
@@ -77,14 +132,14 @@ fi
 #
 SCRIPT="$HOME/.local/bin/${NAME}.sh"
 ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-ID="$(podman container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
-STATE="$(podman container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
+CONTAINER_ID="$("$PODMAN" container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
+CONTAINER_STATE="$("$PODMAN" container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
 
 # Sanity check environment.
 #
 if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]]; then
 	SANITY="100%"
-elif [[ -n "$ID" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+elif [[ -n "$CONTAINER_ID" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
 elif [[ "$1" == "help" ]] || [[ -z "$1" ]]; then
 	SANITY="100%"
@@ -95,8 +150,8 @@ if [[ "$SANITY" == "0%" ]]; then
 	echo "The environment for $NAME appears to be damaged or incomplete, and is"
 	echo "not usable."
 	echo ""
-	if [[ -n "$ID" ]]; then
-		echo "  Podman Container:     $NAME ($ID)"
+	if [[ -n "$CONTAINER_ID" ]]; then
+		echo "  Podman Container:     $NAME ($CONTAINER_ID)"
 	else
 		echo "  Podman Container:     DOES NOT EXIST"
 	fi
@@ -114,26 +169,53 @@ if [[ "$SANITY" == "0%" ]]; then
 	exit 1
 fi
 
-# Update the Podman VM, if necessary.
+# Update the Podman VM or `podman-launcher`, if necessary.
 #
-if [[ "$(uname)" == "Darwin" ]] && [[ "$CONTAINER_STATE" != "running" ]]; then
-	if [[ -f $HOME/.cache/disposable-kali/machine-update ]]; then
-		LAST_UPDATE="$(cat $HOME/.cache/disposable-kali/machine-update)"
+if [[ "$CONTAINER_STATE" != "running" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
+		if [[ -f $HOME/.cache/disposable-kali/machine-update ]]; then
+			LAST_UPDATE="$(cat $HOME/.cache/disposable-kali/machine-update)"
+		else
+			LAST_UPDATE=0
+		fi
+		if [[ $(( $(date "+%s") - $LAST_UPDATE )) -ge $(( 7 * 24 * 60 * 60 )) ]]; then
+			osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+
+			echo ">>>> Upgrading Podman virtual machine..."
+			"$PODMAN" machine ssh 'sudo rpm-ostree upgrade'
+			"$PODMAN" machine stop
+			"$PODMAN" machine start --no-info
+
+			mkdir -p $HOME/.cache/disposable-kali
+			date "+%s" > $HOME/.cache/disposable-kali/machine-update
+
+			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+		fi
 	else
-		LAST_UPDATE=0
-	fi
-	if [[ $(( $(date "+%s") - $LAST_UPDATE )) -ge $(( 7 * 24 * 60 * 60 )) ]]; then
-		osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+		if [[ "$PODMAN" == "$HOME/.cache/disposable-kali/podman-launcher" ]]; then
+			LATEST_PODMAN_LAUNCHER="$(curl --silent --location https://api.github.com/repos/89luca89/podman-launcher/releases/latest | grep --perl-regexp --only-matching '"tag_name": ?"v\K.*?(?=")')"
 
-		echo ">>>> Upgrading Podman virtual machine..."
-		podman machine ssh 'sudo rpm-ostree upgrade'
-		podman machine stop
-		podman machine start --no-info
+			if [[ -f "$HOME/.cache/disposable-kali/podman-launcher.version" ]]; then
+				CURRENT_PODMAN_LAUNCHER="$(cat "$HOME/.cache/disposable-kali/podman-launcher.version")"
+			else
+				CURRENT_PODMAN_LAUNCHER="0.0.0"
+			fi
 
-		mkdir -p $HOME/.cache/disposable-kali
-		date "+%s" > $HOME/.cache/disposable-kali/machine-update
+			if [[ "$LATEST_PODMAN_LAUNCHER" != "$CURRENT_PODMAN_LAUNCHER" ]]; then
+				if [[ "$(uname -m)" == "aarch64" ]]; then
+					PODMAN_LAUNCHER_ARCH="arm64"
+				else
+					PODMAN_LAUNCHER_ARCH="amd64"
+				fi
 
-		osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+				curl --location --output "$HOME/.cache/disposable-kali/podman-launcher" "https://github.com/89luca89/podman-launcher/releases/download/v${LATEST_PODMAN_LAUNCHER}/podman-launcher-${PODMAN_LAUNCHER_ARCH}"
+
+				chmod +x "$HOME/.cache/disposable-kali/podman-launcher"
+				echo "$LATEST_PODMAN_LAUNCHER" > "$HOME/.cache/disposable-kali/podman-launcher.version"
+
+				"$PODMAN" version | grep '^Version: .*' | sed 's/.* //' > "$HOME/.cache/disposable-kali/podman-launcher.podman.version"
+			fi
+		fi
 	fi
 fi
 
@@ -145,15 +227,15 @@ startEngagement () {
 	mkdir -p $HOME/.cache/disposable-kali
 	readlink /etc/localtime | sed 's#.*/zoneinfo/##' > $HOME/.cache/disposable-kali/localtime
 
-	if [[ "$STATE" != "running" ]]; then
-		podman start "$NAME"
+	if [[ "$CONTAINER_STATE" != "running" ]]; then
+		"$PODMAN" start "$NAME"
 		waitForIt
 		echo "ready"
 	fi
 }
 
 stopEngagement () {
-	if [[ "$(uname)" == "Darwin" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 			osascript -e "display dialog \"Waiting for the container to shut down...\n\" buttons {\"Dismiss\"} with title \"Stopping Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
 			if [[ "$CONTAINER_STATE" == "running" ]]; then
@@ -166,11 +248,11 @@ stopEngagement () {
 		if [[ "$CONTAINER_STATE" == "running" ]]; then
 			if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
 				# Can't call stopContainer in a subshell...
+				echo ">>>> Stopping container..."
 				(
-					echo ">>>> Stopping container..."
-					podman stop "$NAME"
+					"$PODMAN" stop --time $WAIT "$NAME"
 				) | zenity --title="Stopping Engagement $NAME" \
-				           --icon=$HOME/.local/share/icons/"${NAME}.png" \
+				           --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
 				           --text="Waiting for the container to shut down..." \
 				           --progress --pulsate --auto-close --no-cancel &> /dev/null
 			else
@@ -185,13 +267,13 @@ stopEngagement () {
 startCLI () {
 	startEngagement
 
-	podman exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/bash
+	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/bash
 }
 
 startGUI () {
 	startEngagement
 
-	if [[ "$(uname)" == "Darwin" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 		mkdir -p $HOME/.cache/disposable-kali
 
 		cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
@@ -247,7 +329,7 @@ startGUI () {
 #
 desktopLauncher () {
 	if [[ "$CONTAINER_STATE" == "running" ]]; then
-		if [[ "$(uname)" == "Darwin" ]]; then
+		if [[ "$OS" == "Darwin" ]]; then
 			osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
 			read -r -d '' APPLESCRIPT <<- EOF
@@ -289,10 +371,10 @@ desktopLauncher () {
 		ENABLE_STOP="no"
 	fi
 
-	if [[ "$(uname)" == "Darwin" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 		ACTION="$(osascript -e "display dialog \"The engagement is $STATE_MESSAGE.\n\" buttons {\"Connect to Engagement\",\"Stop Engagement\",\"Cancel\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" default button \"Cancel\" cancel button \"Cancel\"" 2> /dev/null | sed 's#^button returned:##')"
 	elif [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-		ACTION="$(zenity --title="Engagement $NAME" --icon=$HOME/.local/share/icons/"${NAME}.png" --text="The engagement is $STATE_MESSAGE." --question --switch --extra-button="Connect to Engagement" --extra-button="Stop Engagement" --extra-button="Cancel" 2> /dev/null)"
+		ACTION="$(zenity --title="Engagement $NAME" --window-icon=$HOME/.local/share/icons/"${NAME}.png" --text="The engagement is $STATE_MESSAGE." --question --switch --extra-button="Connect to Engagement" --extra-button="Stop Engagement" --extra-button="Cancel" 2> /dev/null)"
 	else
 		ACTION="Cancel"
 	fi
@@ -324,7 +406,7 @@ deleteEngagement () {
 	echo "You are about to PERMENANTLY DELETE the container, control script,"
 	echo "and data directory for $NAME. The following objects will be deleted:"
 	echo ""
-	echo "  Podman Container:     $NAME ($ID)"
+	echo "  Podman Container:     $NAME ($CONTAINER_ID)"
 	echo "  Engagement Directory: $ENGAGEMENT_DIR"
 	echo "  Control Script:       $SCRIPT"
 	echo ""
@@ -367,29 +449,34 @@ restoreEngagement () {
 		removeContainerImagePair
 
 		echo ">>>> Restoring image..."
-		podman load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
+		"$PODMAN" load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
 
 		echo ">>>> Fixing image tag..."
-		CURRENT_TAG="$(podman images --format "{{.Tag}}" "$NAME")"
-		podman image tag "$NAME:$CURRENT_TAG" "$NAME:latest"
-		podman rmi "$NAME:$CURRENT_TAG"
+		CURRENT_TAG="$("$PODMAN" images --format "{{.Tag}}" "$NAME")"
+		"$PODMAN" image tag "$NAME:$CURRENT_TAG" "$NAME:latest"
+		"$PODMAN" rmi "$NAME:$CURRENT_TAG"
 
 		echo ">>>> Recreating container..."
+		HOST_SPECIFIC_FLAGS=()
+		if [[ "$OS" == "Linux" ]]; then
+			HOST_SPECIFIC_FLAGS+=(--userns keep-id:uid=1000,gid=1000)
+		fi
+
 		mkdir -p $HOME/.cache/disposable-kali
 		readlink /etc/localtime | sed 's#.*/zoneinfo/##' > $HOME/.cache/disposable-kali/localtime
 
-		podman create --name "$NAME" \
-		              --publish 127.0.0.1:3389:3389 \
-		              --tty \
-		              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
-		              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
-		                "$NAME"
+		"$PODMAN" create --name "$NAME" \
+		                 --publish 127.0.0.1:3389:3389 \
+		                 --tty \
+		                 --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
+		                 --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
+		                   "${HOST_SPECIFIC_FLAGS[@]}" "$NAME"
 
 		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.sh" ]]; then
 			mkdir -p "$(dirname "$SCRIPT")"
 			cp -L "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
 		fi
-		if [[ "$(uname)" == "Darwin" ]]; then
+		if [[ "$OS" == "Darwin" ]]; then
 			if [[ -f "$ENGAGEMENT_DIR/Backups/${NAME}.app.tar.gz" ]]; then
 				mkdir -p "$HOME/Applications"
 				(
@@ -406,7 +493,7 @@ restoreEngagement () {
 			fi
 			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
 				mkdir -p "$HOME/.local/share/applications"
-				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/icons/${NAME}.desktop"
+				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/applications/${NAME}.desktop"
 			fi
 		fi
 
@@ -424,10 +511,10 @@ restoreEngagement () {
 # Stop the Podman machine if there are no other running containers.
 #
 stopMachine () {
-	if [[ "$(uname)" == "Darwin" ]]; then
-		if [[ $(podman container list --format "{{.State}}" | grep -c "running") -eq 0 ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
+		if [[ $("$PODMAN" container list --format "{{.State}}" | grep -c "running") -eq 0 ]]; then
 			echo ">>>> Stopping Podman virtual machine..."
-			podman machine stop
+			"$PODMAN" machine stop
 		fi
 	fi
 }
@@ -436,7 +523,7 @@ stopMachine () {
 #
 stopContainer () {
 	echo ">>>> Stopping container..."
-	podman stop "$NAME"
+	"$PODMAN" stop --time $WAIT "$NAME"
 }
 
 # Commit changes in a container to the underlying image and exports the
@@ -445,20 +532,20 @@ stopContainer () {
 commitToImage () {
 	echo ">>>> Committing changes to temporary image..."
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
-	podman commit --author "Backup for $(date) by $USER" "$NAME" "$NAME:$TIMESTAMP"
+	"$PODMAN" commit --author "Backup for $(date) by $USER" "$NAME" "$NAME:$TIMESTAMP"
 
 	echo ">>>> Exporting temporary image..."
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
 	mkdir -p "$BACKUP_DIR"
-	podman save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
+	"$PODMAN" save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
 	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
 
 	echo ">>>> Exporting control files..."
 	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh"
 	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh" "$BACKUP_DIR/$NAME.sh"
 
-	if [[ "$(uname)" == "Darwin" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 		(
 			cd "$HOME/Applications"
 			tar -czf "$BACKUP_DIR/${NAME}.app.${TIMESTAMP}.tar.gz" "${NAME}.app"
@@ -473,24 +560,24 @@ commitToImage () {
 	fi
 
 	echo ">>>> Removing temporary image..."
-	podman rmi --force "${NAME}:${TIMESTAMP}"
+	"$PODMAN" rmi --force "${NAME}:${TIMESTAMP}"
 }
 
 # Cleaning up the container/image pair.
 #
 removeContainerImagePair () {
 	echo ">>>> Removing container..."
-	podman rm --force --volumes "$NAME"
+	"$PODMAN" rm --force --volumes "$NAME"
 
 	echo ">>>> Removing underlying image..."
-	podman rmi --force "$NAME"
+	"$PODMAN" rmi --force "$NAME"
 
 	echo ">>>> Pruning images to remove dangling references..."
-	podman image prune --force > /dev/null
+	"$PODMAN" image prune --force > /dev/null
 
 	echo ">>>> Removing control files..."
 	rm -f "$SCRIPT"
-	if [[ "$(uname)" == "Darwin" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 		rm -rf "$HOME/Applications/${NAME}.app"
 		dockutil --remove $HOME/Applications/"${NAME}.app" 2> /dev/null
 	else
@@ -502,24 +589,22 @@ removeContainerImagePair () {
 # Sleep briefly to give the container a chance to finish booting.
 #
 waitForIt () {
-	SECONDS=12
-	echo -n ">>>> Sleeping briefly"
-	if [[ "$(uname)" == "Darwin" ]]; then
-		osascript -e "display dialog \"Waiting $SECONDS seconds for the container to finish booting...\" buttons {\"Dismiss\"} with title \"Starting Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" giving up after $SECONDS" &> /dev/null &
+	echo -n ">>>> Waiting for the container to finish booting"
+	if [[ "$OS" == "Darwin" ]]; then
+		osascript -e "display dialog \"Waiting for the container to finish booting...\n\" buttons {\"Dismiss\"} with title \"Starting Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" giving up after $WAIT" &> /dev/null &
 	else
 		if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
 			(
-				for STEP in $(seq 1 $SECONDS); do
+				for STEP in $(seq 1 $WAIT); do
 					sleep 1
-					echo $(( $STEP * 100 / $SECONDS ))
 				done
-			) | zenity --title=$NAME \
+			) | zenity --title="Starting Engagement $NAME" \
 		               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
-			           --text="Waiting $SECONDS seconds for the container to finish booting..." \
+			           --text="Waiting for the container to finish booting..." \
 			           --progress --pulsate --auto-close --no-cancel &> /dev/null &
 		fi
 	fi
-	for STEP in $(seq 1 $SECONDS); do
+	for STEP in $(seq 1 $WAIT); do
 		sleep 1
 		echo -n "."
 	done

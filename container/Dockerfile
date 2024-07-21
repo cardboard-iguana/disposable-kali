@@ -1,4 +1,11 @@
-FROM kalilinux/kali-rolling
+FROM registry.hub.docker.com/kalilinux/kali-rolling:latest
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG HOST_OS
+ARG TIMEZONE
+ARG USER_NAME
+
+USER root
 
 # Configure APT
 #
@@ -7,21 +14,11 @@ echo 'APT::Install-Recommends "false";' >  /etc/apt/apt.conf.d/minimal-installs
 echo 'APT::Install-Suggests "false";'   >> /etc/apt/apt.conf.d/minimal-installs
 EOF
 
-# Make sure that base system is sane
+# Install base system
 #
 RUN <<EOF
-export DEBIAN_FRONTEND=noninteractive
-
 apt update       --quiet --assume-yes --fix-missing
 apt full-upgrade --quiet --assume-yes --fix-broken
-
-unset DEBIAN_FRONTEND
-EOF
-
-# Install applications
-#
-RUN <<EOF
-export DEBIAN_FRONTEND=noninteractive
 
 apt install --quiet --assume-yes \
     asciinema \
@@ -55,18 +52,8 @@ apt install --quiet --assume-yes \
     xrdp \
     yarnpkg
 
-unset DEBIAN_FRONTEND
-EOF
-
-# Clean up installation
-#
-RUN <<EOF
-export DEBIAN_FRONTEND=noninteractive
-
 apt autoremove --quiet --assume-yes --purge --autoremove
 apt clean      --quiet --assume-yes
-
-unset DEBIAN_FRONTEND
 EOF
 
 # Make sure locale is built
@@ -78,13 +65,7 @@ EOF
 
 # Set time zone
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
-
-ln --symbolic --force /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE
-EOF
+RUN ln --symbolic --force /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
 
 # Some things expect a `yarn` command, rather than `yarnpkg`
 #
@@ -116,9 +97,7 @@ EOF
 
 # Create (and run) system update cleanup script
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
-
+RUN <<EOF
 cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -171,7 +150,7 @@ sed -i 's#"itemUrl": "https://open-vsx.org/vscode/item"#"itemUrl": "https://mark
 sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' /etc/xrdp/sesman.ini
 sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=false/'                     /etc/xrdp/sesman.ini
 SCRIPT
-if [ "$IS_MACOS" = "yes" ]; then
+if [ "$HOST_OS" = "Darwin" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
 
 	# Fix scroll on macOS
@@ -185,15 +164,11 @@ fi
 chmod 755 /usr/local/sbin/system-update-cleanup.sh
 
 /usr/local/sbin/system-update-cleanup.sh
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Create update script (useful for long-running containiners)
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
-
+RUN <<EOF
 cat > /usr/local/bin/update.sh << SCRIPT
 #!/usr/bin/env bash
 
@@ -232,8 +207,6 @@ CONF
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # We need a custom script to make sure that XFCE's background is set
@@ -265,14 +238,12 @@ EOF
 
 # Create container startup script
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
-
+RUN <<EOF
 cat > /usr/local/sbin/init.sh << SCRIPT
 #!/usr/bin/env bash
 
 if [[ -f /etc/localtime.host ]]; then
-	ln --symbolic --force "/usr/share/zoneinfo/$(cat /etc/localtime.host)" /etc/localtime
+	ln --symbolic --force "/usr/share/zoneinfo/\$(cat /etc/localtime.host)" /etc/localtime
 fi
 
 /etc/init.d/dbus start
@@ -281,25 +252,17 @@ fi
 rm --recursive --force /var/run/xrdp &> /dev/null
 /etc/init.d/xrdp start
 
-chown --recursive $USER_NAME:$USER_NAME /home/$USER_NAME
+chown --recursive "$USER_NAME":"$USER_NAME" /home/"$USER_NAME"
 
 /usr/bin/bash
 SCRIPT
 
 chmod 755 /usr/local/sbin/init.sh
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE
 EOF
 
 # Generate local self-signed certificate (for PostgreSQL)
 #
-RUN <<EOF
-export DEBIAN_FRONTEND=noninteractive
-
-make-ssl-cert generate-default-snakeoil
-
-unset DEBIAN_FRONTEND
-EOF
+RUN make-ssl-cert generate-default-snakeoil
 
 # Init Metasploit database
 #
@@ -310,31 +273,23 @@ EOF
 
 # Create our normal user
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
-
+RUN --mount=type=secret,id=connection-token <<EOF
 useradd --create-home \
         --shell /usr/bin/bash \
         --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video \
-          $USER_NAME
+          "$USER_NAME"
 
-echo "${USER_NAME}:${USER_PASS}" | chpasswd
+echo "${USER_NAME}:$(cat /run/secrets/connection-token)" | chpasswd
 
-echo "$USER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER_NAME
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE
+echo "$USER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/"$USER_NAME"
 EOF
 
 # Home directory setup
 #
-RUN --mount=type=secret,id=config <<EOF
-eval "$(cat /run/secrets/config)"
+RUN <<EOF
+cp --archive --force --no-target-directory /etc/skel /home/"$USER_NAME"
 
-export USER_HOME="/home/$USER_NAME"
-
-cp --archive --force --no-target-directory /etc/skel $USER_HOME
-
-cat > $USER_HOME/.bash_aliases << CONF
+cat > /home/"$USER_NAME"/.bash_aliases << CONF
 #!/usr/bin/env bash
 
 export LANG=en_US.UTF-8
@@ -352,8 +307,8 @@ function bash_prompt_precmd {
 PROMPT_COMMAND=bash_prompt_precmd
 CONF
 
-mkdir --parents $USER_HOME/.BurpSuite
-cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
+mkdir --parents /home/"$USER_NAME"/.BurpSuite
+cat > /home/"$USER_NAME"/.BurpSuite/UserConfigCommunity.json << CONF
 {
     "user_options":{
         "display":{
@@ -378,9 +333,9 @@ cat > $USER_HOME/.BurpSuite/UserConfigCommunity.json << CONF
 }
 CONF
 
-mkdir --parents $USER_HOME/.config/autostart
+mkdir --parents /home/"$USER_NAME"/.config/autostart
 
-cat > $USER_HOME/.config/autostart/disable-session-autosave.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/disable-session-autosave.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable session autosave
@@ -390,7 +345,7 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable session save-on-exit
@@ -400,7 +355,7 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/nm-applet.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/nm-applet.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable NetworkManager applet
@@ -410,7 +365,7 @@ Terminal=false
 Hidden=true
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-background-to-solid-color.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/set-background-to-solid-color.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set background to solid color
@@ -420,27 +375,27 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot full desktop screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path $USER_HOME/Desktop"
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path \\"/home/$USER_NAME/Desktop\\""
 StartupNotify=false
 Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-flameshot-selection-shortcut.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-selection-shortcut.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot selected area screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path $USER_HOME/Desktop"
+Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path \\"/home/$USER_NAME/Desktop\\""
 StartupNotify=false
 Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set Mousepad color scheme
@@ -450,7 +405,7 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/set-session-name.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/set-session-name.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set session name
@@ -460,7 +415,7 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/xfce4-power-manager.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/xfce4-power-manager.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable Xfce power management applet
@@ -470,7 +425,7 @@ Terminal=false
 Hidden=true
 AUTOSTART
 
-cat > $USER_HOME/.config/autostart/xscreensaver.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/xscreensaver.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable screen saver
@@ -480,17 +435,17 @@ Terminal=false
 Hidden=true
 AUTOSTART
 
-mkdir --parents "$USER_HOME/.config/Code - OSS/User"
-cat > "$USER_HOME/.config/Code - OSS/User/settings.json" << JSON
+mkdir --parents /home/"$USER_NAME"/.config/"Code - OSS"/User
+cat > /home/"$USER_NAME"/.config/"Code - OSS"/User/settings.json << JSON
 {
     "window.titleBarStyle": "custom",
     "workbench.colorTheme": "Default Light Modern"
 }
 JSON
 
-touch $USER_HOME/.hushlogin
+touch /home/"$USER_NAME"/.hushlogin
 
-cat > $USER_HOME/.inputrc << CONF
+cat > /home/"$USER_NAME"/.inputrc << CONF
 "\\e[A": history-search-backward
 "\\eOA": history-search-backward
 
@@ -498,9 +453,9 @@ cat > $USER_HOME/.inputrc << CONF
 "\\eOB": history-search-forward
 CONF
 
-mkdir --parents $USER_HOME/.java/.userPrefs/burp
-head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > $USER_HOME/.java/.userPrefs/burp/prefs.xml
-cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
+mkdir --parents /home/"$USER_NAME"/.java/.userPrefs/burp
+head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml
+cat >> /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml << CONF
   <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
   <entry key="free.suite.feedbackReportingEnabled" value="false"/>
@@ -508,27 +463,25 @@ cat >> $USER_HOME/.java/.userPrefs/burp/prefs.xml << CONF
 </map>
 CONF
 
-echo "set tabsize 4" > $USER_HOME/.nanorc
+echo "set tabsize 4" > /home/"$USER_NAME"/.nanorc
 
-mkdir -p $USER_HOME/.ssh
-cat > $USER_HOME/.ssh/config << CONF
+mkdir -p /home/"$USER_NAME"/.ssh
+cat > /home/"$USER_NAME"/.ssh/config << CONF
 Host *
     ForwardAgent no
 CONF
-chmod 700 $USER_HOME/.ssh
-chmod 600 $USER_HOME/.ssh/*
+chmod 700 /home/"$USER_NAME"/.ssh
+chmod 600 /home/"$USER_NAME"/.ssh/*
 
-cat > $USER_HOME/.xsessionrc << CONF
+cat > /home/"$USER_NAME"/.xsessionrc << CONF
 #!/usr/bin/env bash
 
 export LANG=en_US.UTF-8
 CONF
 
-mkdir --parents $USER_HOME/Documents
+mkdir --parents /home/"$USER_NAME"/Documents
 
-chown --recursive $USER_NAME:$USER_NAME $USER_HOME
-
-unset IS_MACOS USER_PASS USER_NAME TIMEZONE USER_HOME
+chown --recursive "$USER_NAME":"$USER_NAME" /home/"$USER_NAME"
 EOF
 
 # Container exec/start

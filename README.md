@@ -42,10 +42,16 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 On [Debian](https://debian.org/):
 
 ```bash
-# Install additional required tools. Alternately, replace
-# `freerdp2-x11` with `freerdp2-wayland`.
+# Alternately, replace `freerdp2-x11` with `freerdp2-wayland`.
 #
-apt install freerdp2-x11 uuid-runtime zenity
+apt install bc freerdp2-x11 podman uuid-runtime zenity
+```
+
+**Note:** You may need to add sub-UIDs/GIDs for your user:
+
+```bash
+[[ $(grep -c $USER /etc/subuid) -eq 0 ]] && sudo usermod --add-subuid 100000-165535 $USER
+[[ $(grep -c $USER /etc/subgid) -eq 0 ]] && sudo usermod --add-subgid 100000-165535 $USER
 ```
 
 Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.

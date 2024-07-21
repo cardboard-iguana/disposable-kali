@@ -1,8 +1,64 @@
 #!/usr/bin/env bash
 
+set -e
+
+OS="$(uname)"
+
+# Figure out which podman we're using; we need at least v4.9.3 to get
+# reliable builds. Once this is widely available (Debian 13 trixie for
+# Chrome OS, but maybe worth keeping this check in here until I get a
+# good look at SteamOS), we can just revert back to using the system
+# podman everywhere.
+#
+if [[ "$OS" == "Darwin" ]]; then
+	PODMAN="$(which podman)"
+elif [[ -z "$PREFIX" ]]; then
+	mkdir -p "$HOME/.cache/disposable-kali"
+
+	LATEST_PODMAN_LAUNCHER="$(curl --silent --location https://api.github.com/repos/89luca89/podman-launcher/releases/latest | grep --perl-regexp --only-matching '"tag_name": ?"v\K.*?(?=")')"
+
+	if [[ -f "$HOME/.cache/disposable-kali/podman-launcher.version" ]]; then
+		CURRENT_PODMAN_LAUNCHER="$(cat "$HOME/.cache/disposable-kali/podman-launcher.version")"
+	else
+		CURRENT_PODMAN_LAUNCHER="0.0.0"
+	fi
+
+	if [[ "$LATEST_PODMAN_LAUNCHER" != "$CURRENT_PODMAN_LAUNCHER" ]]; then
+		if [[ "$(uname -m)" == "aarch64" ]]; then
+			PODMAN_LAUNCHER_ARCH="arm64"
+		else
+			PODMAN_LAUNCHER_ARCH="amd64"
+		fi
+
+		curl --location --output "$HOME/.cache/disposable-kali/podman-launcher" "https://github.com/89luca89/podman-launcher/releases/download/v${LATEST_PODMAN_LAUNCHER}/podman-launcher-${PODMAN_LAUNCHER_ARCH}"
+
+		chmod +x "$HOME/.cache/disposable-kali/podman-launcher"
+		echo "$LATEST_PODMAN_LAUNCHER" > "$HOME/.cache/disposable-kali/podman-launcher.version"
+	fi
+
+	PODMAN_LAUNCHER_PODMAN_VERSION="$("$HOME/.cache/disposable-kali/podman-launcher" version | grep '^Version: .*' | sed 's/.* //')"
+	echo "$PODMAN_LAUNCHER_PODMAN_VERSION" > "$HOME/.cache/disposable-kali/podman-launcher.podman.version"
+
+	if [[ -n "$(which podman 2> /dev/null)" ]]; then
+		SYSTEM_PODMAN_VERSION="$(podman version | grep '^Version: .*' | sed 's/.* //')"
+	else
+		SYSTEM_PODMAN_VERSION="0.0.0"
+	fi
+
+	MOST_RECENT_VERSION="$(echo -e "${SYSTEM_PODMAN_VERSION}\n${PODMAN_LAUNCHER_PODMAN_VERSION}" | sort --version-sort --reverse | head -1)"
+
+	if [[ "$MOST_RECENT_VERSION" == "$SYSTEM_PODMAN_VERSION" ]]; then
+		PODMAN="$(which podman)"
+	else
+		PODMAN="$HOME/.cache/disposable-kali/podman-launcher"
+	fi
+else
+	PODMAN=""
+fi
+
 # Sanity check.
 #
-if [[ -z "$PREFIX" ]] && [[ -n "$(which podman)" ]]; then
+if [[ -z "$PREFIX" ]] && [[ -n "$PODMAN" ]]; then
 	if [[ ! -f container/envctl.sh ]] || [[ ! -f container/Dockerfile ]]; then
 		echo "This script must be run from the root of the disposable-kali repo!"
 		exit 1
@@ -59,9 +115,9 @@ mkdir -p "$(dirname "$SCRIPT")"
 if [[ "$CODE_PATH" == "podman" ]]; then
 	# Init the Podman VM, if necessary.
 	#
-	if [[ "$(uname)" == "Darwin" ]]; then
-		PODMAN_MACHINE_NAME="$(podman machine list --format "{{.Default}}\t{{.Name}}" 2> /dev/null | grep -E '^true' | cut -f 2 | sed 's/\*$//')"
-		PODMAN_MACHINE_STATE="$(podman machine inspect --format "{{.State}}" "$PODMAN_MACHINE_NAME" 2> /dev/null)"
+	if [[ "$OS" == "Darwin" ]]; then
+		PODMAN_MACHINE_NAME="$("$PODMAN" machine list --format "{{.Default}}\t{{.Name}}" 2> /dev/null | grep -E '^true' | cut -f 2 | sed 's/\*$//')"
+		PODMAN_MACHINE_STATE="$("$PODMAN" machine inspect --format "{{.State}}" "$PODMAN_MACHINE_NAME" 2> /dev/null)"
 
 		if [[ -z "$PODMAN_MACHINE_NAME" ]]; then
 			TOTAL_AVAIL_MEMORY=$(bc -le "mem = (($(sysctl hw.memsize | sed 's/.*: //') / 1024) / 1024) / 2; scale = 0; mem / 1")
@@ -104,28 +160,28 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 				exit 1
 			fi
 
-			podman machine init --cpus=$VM_CPU --disk-size=$VM_DISK --memory=$VM_MEMORY --now
+			"$PODMAN" machine init --cpus=$VM_CPU --disk-size=$VM_DISK --memory=$VM_MEMORY --now
 
 			# Fix https://github.com/containers/podman/issues/22678.
 			#
-			if [[ $(podman machine ssh 'sudo rpm-ostree status' | grep -c 'podman-machine-os:5.0') -gt 0 ]]; then
-				podman machine os apply quay.io/podman/machine-os:5.1 --restart
+			if [[ $("$PODMAN" machine ssh 'sudo rpm-ostree status' | grep -c 'podman-machine-os:5.0') -gt 0 ]]; then
+				"$PODMAN" machine os apply quay.io/podman/machine-os:5.1 --restart
 			fi
 
 			# Make sure that auto-updates are disabled
 			#
-			podman machine ssh 'sudo systemctl disable --now zincati.service'
+			"$PODMAN" machine ssh 'sudo systemctl disable --now zincati.service'
 
 			# Perform an update (updates roll out every 14 days, so maybe once per week?)
 			#
-			podman machine ssh 'sudo rpm-ostree upgrade'
-			podman machine stop
-			podman machine start --no-info
+			"$PODMAN" machine ssh 'sudo rpm-ostree upgrade'
+			"$PODMAN" machine stop
+			"$PODMAN" machine start --no-info
 
 			mkdir -p $HOME/.cache/containerized-engagements
 			date "+%s" > $HOME/.cache/containerized-engagements/machine-update
 		elif [[ "$PODMAN_MACHINE_STATE" != "running" ]]; then
-			podman machine start --no-info
+			"$PODMAN" machine start --no-info
 		fi
 	fi
 
@@ -142,57 +198,53 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 	# in practice most of the time a new engagement is only going to be
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
-	if [[ "$(uname)" == "Darwin" ]]; then
-		IS_MACOS="yes"
-		USER_PASS="$(uuidgen | tr "[:upper:]" "[:lower:]")"
+	HOST_SPECIFIC_FLAGS=()
+	if [[ "$OS" == "Darwin" ]]; then
+		CONNECTION_TOKEN="$(uuidgen | tr "[:upper:]" "[:lower:]")"
 	else
-		IS_MACOS="no"
-		USER_PASS="$(uuidgen --random)"
+		CONNECTION_TOKEN="$(uuidgen --random)"
+		HOST_SPECIFIC_FLAGS+=(--userns keep-id:uid=1000,gid=1000)
 	fi
 
 	TIMEZONE="$(readlink /etc/localtime | sed 's#.*/zoneinfo/##')"
 
-	BUILD_CONFIG="$(mktemp)"
+	TOKEN_FILE="$(mktemp)"
 
-	cat > "$BUILD_CONFIG" <<- EOF
-	export IS_MACOS="$IS_MACOS"
-	export USER_PASS="$USER_PASS"
-	export USER_NAME="$USER"
-	export TIMEZONE="$TIMEZONE"
-	EOF
+	echo "$CONNECTION_TOKEN" > "$TOKEN_FILE"
 
-	cat container/Dockerfile | podman build \
+	cat container/Dockerfile | "$PODMAN" build \
 		--no-cache \
-		--secret id=config,src="$BUILD_CONFIG" \
+		--build-arg HOST_OS="$OS" \
+		--build-arg TIMEZONE="$TIMEZONE" \
+		--build-arg USER_NAME="$USER" \
+		--secret id=connection-token,src="$TOKEN_FILE" \
 		--tag "$NAME" -
 
-	rm "$BUILD_CONFIG"
+	rm "$TOKEN_FILE"
 
 	mkdir -p $HOME/.cache/disposable-kali
 	echo "$TIMEZONE" > $HOME/.cache/disposable-kali/localtime
 
-	podman create --name "$NAME" \
-	              --cap-add SYS_ADMIN \
-	              --device /dev/fuse \
-	              --publish 127.0.0.1:3389:3389 \
-	              --tty \
-	              --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
-	              --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
-	                "$NAME"
+	"$PODMAN" create --name "$NAME" \
+	                 --publish 127.0.0.1:3389:3389 \
+	                 --tty \
+	                 --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
+	                 --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
+	                   "${HOST_SPECIFIC_FLAGS[@]}" "$NAME"
 
 	# Shut down the Podman VM, unless it's still being used for something.
 	#
-	if [[ "$(uname)" == "Darwin" ]]; then
-		if [[ $(podman container list --format "{{.State}}" | grep -c "running") -eq 0 ]]; then
-			podman machine stop
+	if [[ "$OS" == "Darwin" ]]; then
+		if [[ $("$PODMAN" container list --format "{{.State}}" | grep -c "running") -eq 0 ]]; then
+			"$PODMAN" machine stop
 		fi
 	fi
 
 	# Setup control script and launcher.
 	#
-	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$USER_PASS/" container/envctl.sh > "$SCRIPT"
+	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$CONNECTION_TOKEN/" container/envctl.sh > "$SCRIPT"
 
-	if [[ "$IS_MACOS" == "yes" ]]; then
+	if [[ "$OS" == "Darwin" ]]; then
 		mkdir -p $HOME/Applications
 		cp container/launcher.tar /tmp
 		(
