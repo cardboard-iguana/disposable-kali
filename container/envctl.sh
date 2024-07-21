@@ -338,7 +338,7 @@ desktopLauncher () {
 		if [[ "$OS" == "Darwin" ]]; then
 			osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
-			read -r -d '' APPLESCRIPT <<- EOF
+			RDP_STATE="$(osascript <<- EOF
 			tell application "System Events"
 				if application process "Microsoft Remote Desktop" exists then
 					if menu item "kali - 127.0.0.1" of menu 1 of menu bar item "Window" of menu bar 1 of application process "Microsoft Remote Desktop" exists then
@@ -351,7 +351,7 @@ desktopLauncher () {
 				end if
 			end tell
 			EOF
-			RDP_STATE="$(echo "$APPLESCRIPT" | osascript -)"
+			)"
 
 			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
 		else
@@ -452,7 +452,9 @@ restoreEngagement () {
 		if [[ "$CONTAINER_STATE" == "running" ]]; then
 			stopContainer
 		fi
-		removeContainerImagePair
+		if [[ -n "$CONTAINER_ID" ]]; then
+			removeContainerImagePair
+		fi
 
 		echo ">>>> Restoring image..."
 		"$PODMAN" load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
