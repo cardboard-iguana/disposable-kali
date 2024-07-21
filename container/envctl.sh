@@ -119,12 +119,16 @@ fi
 #
 if [[ "$OS" == "Darwin" ]]; then
 	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
-		osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+		if [[ -n "$CONTAINER_ID" ]]; then
+			osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+		fi
 
 		echo ">>>> Starting Podman virtual machine..."
 		"$PODMAN" machine start --no-info
 
-		osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+		if [[ -n "$CONTAINER_ID" ]]; then
+			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+		fi
 	fi
 fi
 
@@ -380,10 +384,14 @@ desktopLauncher () {
 	if [[ "$OS" == "Darwin" ]]; then
 		ACTION="$(osascript -e "display dialog \"The engagement is $STATE_MESSAGE.\n\" buttons {\"Connect to Engagement\",\"Stop Engagement\",\"Cancel\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" default button \"Cancel\" cancel button \"Cancel\"" 2> /dev/null | sed 's#^button returned:##')"
 	elif [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
+		# `zenity --question --switch` always returns 1
+		set +e
 		ACTION="$(zenity --title="Engagement $NAME" --window-icon=$HOME/.local/share/icons/"${NAME}.png" --text="The engagement is $STATE_MESSAGE." --question --switch --extra-button="Connect to Engagement" --extra-button="Stop Engagement" --extra-button="Cancel" 2> /dev/null)"
+		set -e
 	else
 		ACTION="Cancel"
 	fi
+	echo "$ACTION"
 
 	if [[ "$ACTION" == "Connect to Engagement" ]]; then
 		startGUI
