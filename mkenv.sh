@@ -117,7 +117,6 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 	#
 	if [[ "$OS" == "Darwin" ]]; then
 		PODMAN_MACHINE_NAME="$("$PODMAN" machine list --format "{{.Default}}\t{{.Name}}" 2> /dev/null | grep -E '^true' | cut -f 2 | sed 's/\*$//')"
-		PODMAN_MACHINE_STATE="$("$PODMAN" machine inspect --format "{{.State}}" "$PODMAN_MACHINE_NAME" 2> /dev/null)"
 
 		if [[ -z "$PODMAN_MACHINE_NAME" ]]; then
 			TOTAL_AVAIL_MEMORY=$(bc -le "mem = (($(sysctl hw.memsize | sed 's/.*: //') / 1024) / 1024) / 2; scale = 0; mem / 1")
@@ -160,7 +159,8 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 				exit 1
 			fi
 
-			"$PODMAN" machine init --cpus=$VM_CPU --disk-size=$VM_DISK --memory=$VM_MEMORY --now
+			"$PODMAN" machine init --cpus=$VM_CPU --disk-size=$VM_DISK --memory=$VM_MEMORY
+			"$PODMAN" machine start --no-info
 
 			# Fix https://github.com/containers/podman/issues/22678.
 			#
@@ -180,8 +180,10 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 
 			mkdir -p $HOME/.cache/containerized-engagements
 			date "+%s" > $HOME/.cache/containerized-engagements/machine-update
-		elif [[ "$PODMAN_MACHINE_STATE" != "running" ]]; then
-			"$PODMAN" machine start --no-info
+		else
+			if [[ "$("$PODMAN" machine inspect --format "{{.State}}" "$PODMAN_MACHINE_NAME" 2> /dev/null)" != "running" ]]; then
+				"$PODMAN" machine start --no-info
+			fi
 		fi
 	fi
 
