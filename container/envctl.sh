@@ -456,7 +456,7 @@ backupEngagement () {
 # Restore from the most recent backup.
 #
 restoreEngagement () {
-	if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.tar" ]]; then
+	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.tar | wc -l) -gt 0 ]]; then
 		if [[ "$CONTAINER_STATE" == "running" ]]; then
 			stopContainer
 		fi
@@ -465,7 +465,8 @@ restoreEngagement () {
 		fi
 
 		echo ">>>> Restoring image..."
-		"$PODMAN" load --input "$ENGAGEMENT_DIR/Backups/$NAME.tar"
+		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.tar | sort | tail -1)"
+		"$PODMAN" load --input "$RESTORE_TARGET"
 
 		echo ">>>> Fixing image tag..."
 		CURRENT_TAG="$("$PODMAN" images --format "{{.Tag}}" "$NAME")"
@@ -488,35 +489,40 @@ restoreEngagement () {
 		                 --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 		                   "${HOST_SPECIFIC_FLAGS[@]}" "$NAME"
 
-		if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.sh" ]]; then
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.sh | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.sh | sort | tail -1)"
 			mkdir -p "$(dirname "$SCRIPT")"
-			cp -L "$ENGAGEMENT_DIR/Backups/$NAME.sh" "$SCRIPT"
+			cp "$RESTORE_TARGET" "$SCRIPT"
+			chmod 755 "$SCRIPT"
 		fi
 		if [[ "$OS" == "Darwin" ]]; then
-			if [[ -f "$ENGAGEMENT_DIR/Backups/${NAME}.app.tar.gz" ]]; then
+			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.app.podman.tar.gz | wc -l) -gt 0 ]]; then
+				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.app.podman.tar.gz | sort | tail -1)"
 				mkdir -p "$HOME/Applications"
 				(
 					cd "$ENGAGEMENT_DIR/Backups"
-					tar -xzf "${NAME}.app.tar.gz"
+					tar -xzf "$RESTORE_TARGET"
 					mv "${NAME}.app" "$HOME/Applications/"
 				)
 				dockutil --add $HOME/Applications/"${NAME}.app"
 			fi
 		else
-			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.png" ]]; then
+			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.png | wc -l) -gt 0 ]]; then
+				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.png | sort | tail -1)"
 				mkdir -p "$HOME/.local/share/icons"
-				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.png" "$HOME/.local/share/icons/${NAME}.png"
+				cp "$RESTORE_TARGET" "$HOME/.local/share/icons/${NAME}.png"
 			fi
-			if [[ -f "$ENGAGEMENT_DIR/Backups/$NAME.desktop" ]]; then
+			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.desktop | wc -l) -gt 0 ]]; then
+				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.desktop | sort | tail -1)"
 				mkdir -p "$HOME/.local/share/applications"
-				cp -L "$ENGAGEMENT_DIR/Backups/$NAME.desktop" "$HOME/.local/share/applications/${NAME}.desktop"
+				cp "$RESTORE_TARGET" "$HOME/.local/share/applications/${NAME}.desktop"
 			fi
 		fi
 
 		stopMachine
 
 		echo ""
-		echo "Engagement $NAME has been restored from the backup at $ENGAGEMENT_DIR/Backups/$NAME.tar."
+		echo "Engagement $NAME has been restored from the backup at $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.tar | sort | tail -1)."
 	else
 		echo "No backup found at $ENGAGEMENT_DIR/Backups/$NAME.tar!"
 	fi
@@ -552,27 +558,27 @@ commitToImage () {
 
 	echo ">>>> Exporting temporary image..."
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
-	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
+	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.podman.tar"
 	mkdir -p "$BACKUP_DIR"
 	"$PODMAN" save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
-	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.tar"
+	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.podman.tar"
 
 	echo ">>>> Exporting control files..."
-	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh"
-	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.sh" "$BACKUP_DIR/$NAME.sh"
+	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.sh"
+	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.sh" "$BACKUP_DIR/$NAME.podman.sh"
 
 	if [[ "$OS" == "Darwin" ]]; then
 		(
 			cd "$HOME/Applications"
-			tar -czf "$BACKUP_DIR/${NAME}.app.${TIMESTAMP}.tar.gz" "${NAME}.app"
+			tar -czf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.app.podman.tar.gz" "${NAME}.app"
 		)
-		ln -sf "$BACKUP_DIR/${NAME}.app.${TIMESTAMP}.tar.gz" "$BACKUP_DIR/${NAME}.app.tar.gz"
+		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.app.podman.tar.gz" "$BACKUP_DIR/${NAME}.app.podman.tar.gz"
 	else
-		cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop"
-		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.desktop" "$BACKUP_DIR/$NAME.desktop"
+		cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.desktop"
+		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.desktop" "$BACKUP_DIR/$NAME.podman.desktop"
 
-		cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png"
-		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.png" "$BACKUP_DIR/$NAME.png"
+		cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.png"
+		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.png" "$BACKUP_DIR/$NAME.podman.png"
 	fi
 
 	echo ">>>> Removing temporary image..."

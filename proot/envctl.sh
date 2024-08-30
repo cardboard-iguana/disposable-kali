@@ -159,30 +159,33 @@ backupEngagement () {
 #
 restoreEngagement () {
 	unNerfProotDistro
-	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | wc -l) -gt 0 ]]; then
+	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | wc -l) -gt 0 ]]; then
 
-		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.tar | sort | tail -1)"
+		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | sort | tail -1)"
 
 		proot-distro restore "$RESTORE_TARGET"
 
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.sh | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.sh | sort | tail -1)"
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.sh | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.sh | sort | tail -1)"
 			cp "$RESTORE_TARGET" "$SCRIPT"
 			chmod 755 "$SCRIPT"
 		fi
 
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.widget | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.widget | sort | tail -1)"
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.widget | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.widget | sort | tail -1)"
 			mkdir --parents $HOME/.shortcuts/tasks
 			cp "$RESTORE_TARGET" $HOME/.shortcuts/tasks/"${NAME}.sh"
 			chmod 755 $HOME/.shortcuts/tasks/"${NAME}.sh"
 		fi
 
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.png | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.png | sort | tail -1)"
+		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.png | wc -l) -gt 0 ]]; then
+			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.png | sort | tail -1)"
 			mkdir --parents $HOME/.shortcuts/icons
 			cp "$RESTORE_TARGET" $HOME/.shortcuts/icons/"${NAME}.sh.png"
 		fi
+
+		echo ""
+		echo "Engagement $NAME has been restored from the backup at $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | sort | tail -1)."
 	else
 		echo "No backups found in $ENGAGEMENT_DIR/Backups!"
 	fi
@@ -193,10 +196,10 @@ restoreEngagement () {
 prootBackup () {
 	TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
-	PROOT_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.tar"
-	ENVCTL_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.sh"
-	WIDGET_SH_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.widget"
-	WIDGET_PNG_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.png"
+	PROOT_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.tar"
+	ENVCTL_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.sh"
+	WIDGET_SH_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.widget"
+	WIDGET_PNG_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.png"
 
 	mkdir --parents "$BACKUP_DIR"
 	proot-distro backup --output "$PROOT_BACKUP_FILE" "$NAME"
