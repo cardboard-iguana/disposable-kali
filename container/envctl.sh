@@ -524,7 +524,7 @@ restoreEngagement () {
 		echo ""
 		echo "Engagement $NAME has been restored from the backup at $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.tar | sort | tail -1)."
 	else
-		echo "No backup found at $ENGAGEMENT_DIR/Backups/$NAME.tar!"
+		echo "No backups found in $ENGAGEMENT_DIR/Backups!"
 	fi
 }
 
@@ -561,24 +561,18 @@ commitToImage () {
 	BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.podman.tar"
 	mkdir -p "$BACKUP_DIR"
 	"$PODMAN" save --output "$BACKUP_FILE" "${NAME}:${TIMESTAMP}"
-	ln -sf "$BACKUP_FILE" "$BACKUP_DIR/$NAME.podman.tar"
 
 	echo ">>>> Exporting control files..."
 	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.sh"
-	ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.sh" "$BACKUP_DIR/$NAME.podman.sh"
 
 	if [[ "$OS" == "Darwin" ]]; then
 		(
 			cd "$HOME/Applications"
 			tar -czf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.app.podman.tar.gz" "${NAME}.app"
 		)
-		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.app.podman.tar.gz" "$BACKUP_DIR/${NAME}.app.podman.tar.gz"
 	else
 		cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.desktop"
-		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.desktop" "$BACKUP_DIR/$NAME.podman.desktop"
-
 		cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.png"
-		ln -sf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.png" "$BACKUP_DIR/$NAME.podman.png"
 	fi
 
 	echo ">>>> Removing temporary image..."
