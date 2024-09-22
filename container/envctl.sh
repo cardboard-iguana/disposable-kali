@@ -119,15 +119,19 @@ fi
 #
 if [[ "$OS" == "Darwin" ]]; then
 	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
+		DIALOG_PID=""
+
 		if [[ -n "$CONTAINER_ID" ]]; then
 			osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+
+			DIALOG_PID=$!
 		fi
 
 		echo ">>>> Starting Podman virtual machine..."
 		"$PODMAN" machine start --no-info
 
-		if [[ -n "$CONTAINER_ID" ]]; then
-			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+		if [[ -n "$CONTAINER_ID" ]] && [[ -n "$DIALOG_PID" ]]; then
+			kill $DIALOG_PID
 		fi
 	fi
 fi
@@ -191,6 +195,8 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 		if [[ $(( $(date "+%s") - $LAST_UPDATE )) -ge $(( 7 * 24 * 60 * 60 )) ]]; then
 			osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
+			DIALOG_PID=$!
+
 			echo ">>>> Upgrading Podman virtual machine..."
 			"$PODMAN" machine ssh 'sudo rpm-ostree upgrade'
 			"$PODMAN" machine stop
@@ -199,7 +205,7 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 			mkdir -p $HOME/.cache/disposable-kali
 			date "+%s" > $HOME/.cache/disposable-kali/machine-update
 
-			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+			kill $DIALOG_PID
 		fi
 	else
 		if [[ "$PODMAN" == "$HOME/.cache/disposable-kali/podman-launcher" ]]; then
@@ -248,12 +254,14 @@ stopEngagement () {
 	if [[ "$OS" == "Darwin" ]]; then
 			osascript -e "display dialog \"Waiting for the container to shut down...\n\" buttons {\"Dismiss\"} with title \"Stopping Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
+			DIALOG_PID=$!
+
 			if [[ "$CONTAINER_STATE" == "running" ]]; then
 				stopContainer
 			fi
 			stopMachine
 
-			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Stopping Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+			kill $DIALOG_PID
 	else
 		if [[ "$CONTAINER_STATE" == "running" ]]; then
 			if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
@@ -310,10 +318,10 @@ startGUI () {
 		open $HOME/.cache/disposable-kali/kali.rdp
 
 		osascript - <<- EOF
-		tell application "Microsoft Remote Desktop"
+		tell application "Windows App"
 			activate
 			tell application "System Events"
-				repeat until (exists window "Microsoft Remote Desktop" of application process "Microsoft Remote Desktop")
+				repeat until ((exists window "Favorites" of application process "Windows App") or (exists window "Devices" of application process "Windows App") or (exists window "Apps" of application process "Windows App"))
 					delay 1
 				end repeat
 			end tell
@@ -321,9 +329,11 @@ startGUI () {
 			activate
 		end tell
 
+		tell application "System Events" to click text field 2 of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
+
 		tell application "System Events" to keystroke "$TOKEN"
 
-		tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Microsoft Remote Desktop"
+		tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
 		EOF
 	else
 		if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
@@ -342,10 +352,12 @@ desktopLauncher () {
 		if [[ "$OS" == "Darwin" ]]; then
 			osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
+			DIALOG_PID=$!
+
 			RDP_STATE="$(osascript <<- EOF
 			tell application "System Events"
-				if application process "Microsoft Remote Desktop" exists then
-					if menu item "kali - 127.0.0.1" of menu 1 of menu bar item "Window" of menu bar 1 of application process "Microsoft Remote Desktop" exists then
+				if application process "Windows App" exists then
+					if menu item "kali - 127.0.0.1" of menu 1 of menu bar item "Window" of menu bar 1 of application process "Windows App" exists then
 						return "connected"
 					else
 						return "disconnected"
@@ -357,7 +369,7 @@ desktopLauncher () {
 			EOF
 			)"
 
-			osascript -e "tell application \"System Events\" to click UI Element \"Dismiss\" of window \"Engagement $NAME\" of application process \"osascript\"" &> /dev/null
+			kill $DIALOG_PID
 		else
 			if [[ $(ps auxww | grep freerdp | grep -c '/v:127.0.0.1:3389') -gt 0 ]]; then
 				RDP_STATE="connected"
