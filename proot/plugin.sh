@@ -42,6 +42,7 @@ distro_setup() {
 		recordmydesktop \
 	    tumbler \
 		uuid-runtime \
+		xfce4-notifyd \
 		xorg \
 		yarnpkg
 
