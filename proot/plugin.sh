@@ -40,7 +40,7 @@ distro_setup() {
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
-	    tumbler \
+		tumbler \
 		uuid-runtime \
 		xfce4-notifyd \
 		xorg \
