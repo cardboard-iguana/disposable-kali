@@ -121,7 +121,7 @@ distro_setup() {
 
 	# PostgreSQL upgrade hack
 	#
-	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-16.prerm
+	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-17.prerm
 	EOF
 
 	chmod 755 ./usr/local/sbin/system-update-cleanup.sh
