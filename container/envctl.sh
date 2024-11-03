@@ -296,11 +296,10 @@ startGUI () {
 
 		cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
 		smart sizing:i:1
-		screen mode id:i:2
+		screen mode id:i:1
 		prompt for credentials on client:i:1
 		redirectsmartcards:i:0
 		redirectclipboard:i:1
-		forcehidpioptimizations:i:0
 		full address:s:127.0.0.1
 		drivestoredirect:s:*
 		networkautodetect:i:0
@@ -309,10 +308,8 @@ startGUI () {
 		session bpp:i:16
 		audiomode:i:0
 		bandwidthautodetect:i:1
-		connection type:i:7
 		dynamic resolution:i:1
 		username:s:$USER
-		allow font smoothing:i:1
 		EOF
 
 		open $HOME/.cache/disposable-kali/kali.rdp
