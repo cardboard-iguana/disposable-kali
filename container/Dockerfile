@@ -132,6 +132,9 @@ sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce
 sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
 sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
 
+sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt6ct/qt6ct.conf
+sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt6ct/qt6ct.conf
+
 sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
 sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
 
