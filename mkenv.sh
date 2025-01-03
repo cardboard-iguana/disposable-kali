@@ -292,7 +292,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	#
 	sed -i 's/if .*(kali|parrot|nethunter|blackarch).*; then/if false; then/' $(which proot-distro)
 
-	TARBALL_SHA256="$(curl --silent https://kali.download/nethunter-images/current/rootfs/SHA256SUMS | grep kalifs-arm64-minimal | sed 's/ .*//')"
+	TARBALL_SHA256="$(curl https://kali.download/nethunter-images/current/rootfs/kali-nethunter-rootfs-minimal-arm64.tar.xz | sha256sum | sed 's/ .*//')"
 	BUILD_DATE="$(date)"
 
 	sed "s|{{distro-name}}|$NAME|;s|{{build-date}}|$BUILD_DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.override.sh"
@@ -308,7 +308,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	#     FATAL:   Could not create shared memory segment: Function not implemented
 	#     DETAIL:  Failed system call was shmget
 	#
-	proot-distro login "$NAME" -- bash -c "su postgres --command=\"pg_createcluster 16 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
+	proot-distro login "$NAME" -- bash -c "su postgres --command=\"pg_createcluster 17 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
 
 	proot-distro login "$NAME" -- bash -c "echo \"kali:\$(uuidgen --random)\" | chpasswd"
 

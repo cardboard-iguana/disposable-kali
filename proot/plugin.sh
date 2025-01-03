@@ -2,7 +2,7 @@
 
 DISTRO_NAME="{{distro-name}}"
 DISTRO_COMMENT="Kali Linux NetHunter (build date {{build-date}})"
-TARBALL_URL['aarch64']="https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz"
+TARBALL_URL['aarch64']="https://kali.download/nethunter-images/current/rootfs/kali-nethunter-rootfs-minimal-arm64.tar.xz"
 TARBALL_SHA256['aarch64']="{{tarball-sha256}}"
 
 distro_setup() {
@@ -86,15 +86,15 @@ distro_setup() {
 
 	# Desktop customizations
 	#
-	sed -i 's#\\(name="panel-1" type="empty">\\)#\\1\\n      <property name="dark-mode" type="bool" value="true"/>#' /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                          /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                                /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'                      /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/'             /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'                      /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                                        /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                    /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                        /etc/xdg/xfce4/panel/default.xml
+	sed -i 's#\\(^    <property name="panel-1" type="empty">$\\)#    <property name="dark-mode" type="bool" value="true"/>\\n\\1#' /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                                        /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                                              /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'                                    /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/'                           /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'                                    /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
 
 	cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
 	<?xml version="1.1" encoding="UTF-8"?>
