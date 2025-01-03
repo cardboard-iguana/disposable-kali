@@ -33,7 +33,9 @@ distro_setup() {
 		fonts-noto-ui-extra \
 		fonts-noto-unhinted \
 		kali-desktop-xfce \
+		kali-hidpi-mode \
 		kali-undercover \
+		less \
 		metasploit-framework \
 		nano \
 		npm \
@@ -42,6 +44,7 @@ distro_setup() {
 		recordmydesktop \
 		tumbler \
 		uuid-runtime \
+		xclip \
 		xfce4-notifyd \
 		xorg \
 		yarnpkg
@@ -75,41 +78,43 @@ distro_setup() {
 	# Create (and run) system update cleanup script.
 	#
 	cat > ./usr/local/sbin/system-update-cleanup.sh <<- EOF
+	#!/usr/bin/env bash
+
 	# Fix bad permissions on /usr/bin/sudo
 	#
 	chmod u+s /usr/bin/sudo
 
-	# Make sure that problematic services are disabled (power
-	# management, screen saver, etc.)
+	# Desktop customizations
 	#
-	sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
+	sed -i 's#\\(name="panel-1" type="empty">\\)#\\1\\n      <property name="dark-mode" type="bool" value="true"/>#' /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                          /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                                /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'                      /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/'             /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'                      /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                                        /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                    /etc/xdg/xfce4/panel/default.xml
+	sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                        /etc/xdg/xfce4/panel/default.xml
 
-	# Additional customizations
-	#
-	sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
-	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
+	cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
+	<?xml version="1.1" encoding="UTF-8"?>
 
-	sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-	sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+	<channel name="xfce4-notifyd" version="1.0">
+	  <property name="theme" type="string" value="Retro"/>
+	  <property name="notify-location" type="string" value="bottom-right"/>
+	</channel>
+	XML
 
 	sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 
-	sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+	sed -i 's/"Kali-Dark"/"Kali-Light"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 	sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 
-	sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
-	sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+	sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt5ct/qt5ct.conf
+	sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf
 
-	sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt6ct/qt6ct.conf
-	sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt6ct/qt6ct.conf
+	sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt6ct/qt6ct.conf
+	sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt6ct/qt6ct.conf
 
 	sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
 	sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
@@ -125,6 +130,29 @@ distro_setup() {
 	# PostgreSQL upgrade hack
 	#
 	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-17.prerm
+
+	# FIXME: Unfortunately, setting the XFCE desktop backdrop is broken as
+	# of 2025-01-02 for outputs whose names contain spaces. This causes
+	# xfdesktop to always load /usr/share/backgrounds/xfce/xfce-x.svg as the
+	# backdrop, rather than applying the solid color set above. As a stupid
+	# work-around, we overwrite the default backdrop with one that is the
+	# desired solid color.
+	#
+	cat > /usr/share/backgrounds/xfce/xfce-x.svg << SVG
+	<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+	<svg width="3840"
+	     height="2160"
+	     viewBox="0 0 3840 2160"
+	     version="1.1"
+	     style="background-color: #19315a;"
+	     xmlns="http://www.w3.org/2000/svg">
+	<rect style="fill: #19315a; fill-opacity: 1;"
+	      width="3840"
+	      height="2160"
+	      x="0"
+	      y="0" />
+	</svg>
+	SVG
 	EOF
 
 	chmod 755 ./usr/local/sbin/system-update-cleanup.sh
@@ -158,6 +186,7 @@ distro_setup() {
 
 	head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
 	cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
+	  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
 	  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
 	  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
 	  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
@@ -181,15 +210,16 @@ distro_setup() {
 	GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
 	BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
 
-	xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+\$##' | sort -u | while read BACKDROP; do
-		xfconf-query --channel xfce4-desktop --property \$BACKDROP/image-style --create --type int --set 0
-		xfconf-query --channel xfce4-desktop --property \$BACKDROP/color-style --create --type int --set 0
-		xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \\
-		             --type double --set \$RED \\
-		             --type double --set \$GREEN \\
-		             --type double --set \$BLUE \\
-		             --type double --set 1
-	done
+	MONITOR="\$(xrandr --current | grep connected | sed 's/connected.*//;s/ //g')"
+
+	xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-mode                            --create --type bool   --set true
+	xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-number                          --create --type int    --set 0
+	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/image-style --create --type int    --set 0
+	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/color-style --create --type int    --set 0
+	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/rgba1       --create --type double --set \$RED \\
+	                                                                                                                    --type double --set \$GREEN \\
+	                                                                                                                    --type double --set \$BLUE \\
+	                                                                                                                    --type double --set 1
 	EOF
 
 	chmod 755 ./usr/local/bin/set-background-to-solid-color.sh
@@ -241,7 +271,7 @@ distro_setup() {
 	export LANG=en_US.UTF-8
 	export MESA_GL_VERSION_OVERRIDE=4.5
 	export PULSE_SERVER=tcp:127.0.0.1
-	export QT_QPA_PLATFORMTHEME=qt5ct
+	export QT_QPA_PLATFORMTHEME=qt6ct
 	export SHELL=\$(which zsh)
 
 	dbus-launch --exit-with-session startxfce4
@@ -415,6 +445,7 @@ distro_setup() {
 	mkdir --parents ./home/kali/.java/.userPrefs/burp
 	head --lines -1 ./etc/skel/.java/.userPrefs/burp/prefs.xml > ./home/kali/.java/.userPrefs/burp/prefs.xml
 	cat >> ./home/kali/.java/.userPrefs/burp/prefs.xml <<- EOF
+	  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
 	  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
 	  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
 	  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
@@ -436,6 +467,9 @@ distro_setup() {
 	#!/usr/bin/env zsh
 
 	export LANG=en_US.UTF-8
+
+	alias pbcopy="\$(which xclip) -in -selection clipboard"
+	alias pbpaste="\$(which xclip) -out -selection clipboard"
 
 	[[ -f /tmp/okc-ssh-agent.env ]] && source /tmp/okc-ssh-agent.env
 	EOF

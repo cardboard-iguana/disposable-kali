@@ -305,7 +305,8 @@ startGUI () {
 		networkautodetect:i:0
 		redirectprinters:i:0
 		autoreconnection enabled:i:1
-		session bpp:i:16
+		forcehidpioptimizations:i:1
+		session bpp:i:24
 		audiomode:i:0
 		bandwidthautodetect:i:1
 		dynamic resolution:i:1
@@ -338,7 +339,7 @@ startGUI () {
 		else
 			FREERDP=xfreerdp
 		fi
-		$FREERDP /bpp:16 /dynamic-resolution /f /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
+		$FREERDP /bpp:24 /dynamic-resolution /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
 	fi
 }
 

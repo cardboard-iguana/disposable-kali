@@ -1,6 +1,7 @@
 FROM registry.hub.docker.com/kalilinux/kali-rolling:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG HIDPI
 ARG HOST_OS
 ARG TIMEZONE
 ARG USER_NAME
@@ -38,7 +39,9 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
     kali-desktop-xfce \
+    kali-hidpi-mode \
     kali-undercover \
+    less \
     metasploit-framework \
     nano \
     npm \
@@ -47,6 +50,7 @@ apt install --quiet --assume-yes \
     recordmydesktop \
     tumbler \
     uuid-runtime \
+    xclip \
     xfce4-notifyd \
     xorg \
     xorgxrdp \
@@ -102,38 +106,57 @@ RUN <<EOF
 cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 #!/usr/bin/env bash
 
-# Make sure that problematic services are disabled (power management,
-# screen saver, etc.)
+# Desktop customizations
 #
-sed -i 's/"cpugraph"/"cpugraph-disabled"/'                         /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"power-manager-plugin"/"power-manager-plugin-disabled"/' /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"pulseaudio"/"pulseaudio-disabled"/'                     /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"+lock-screen"/"-lock-screen"/'                          /etc/xdg/xfce4/panel/default.xml
-
-# Additional customizations
+# FIXME: Change CursorThemeSize to 48 once xorgxrdp > 0.10.0 is available!
 #
-sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                              /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                    /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'          /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/' /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'          /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                            /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                        /etc/xdg/xfce4/panel/default.xml
+sed -i 's#\\(^    <property name="panel-1" type="empty">$\\)#    <property name="dark-mode" type="bool" value="true"/>\\n\\1#' /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                                        /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                                              /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'                                    /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/'                           /etc/xdg/xfce4/panel/default.xml
+sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'                                    /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
+sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
 
-sed -i 's#<property name="last-image" type="string" value="/usr/share/backgrounds/kali-16x9/default"/>#<property name="last-image" type="empty"/>#'                    /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-sed -i 's#<property name="image-style" type="int" value="5"/>#<property name="color-style" type="int" value="0"/><property name="image-style" type="int" value="0"/>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-sed -i 's#<property name="image-show" type="bool" value="true"/>#<property name="image-show" type="bool" value="false"/>#'                                             /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
+<?xml version="1.1" encoding="UTF-8"?>
 
-sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+<channel name="xfce4-notifyd" version="1.0">
+  <property name="theme" type="string" value="Retro"/>
+  <property name="notify-location" type="string" value="bottom-right"/>
+</channel>
+XML
 
-sed -i 's/"Kali-Dark"/"Windows-10"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+SCRIPT
+if [ "$HIDPI" = "yes" ]; then
+	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
+	sed -i 's/"Kali-Dark"/"Kali-Light-xHiDPI"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+	SCRIPT
+else
+	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
+	sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+	SCRIPT
+fi
+cat >> /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 
-sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt5ct/qt5ct.conf
-sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf
+sed -i 's/"Kali-Dark"/"Kali-Light"/'                                                                                                                       /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/'                                                                                                      /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+SCRIPT
+if [ "$HIDPI" = "yes" ]; then
+	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
+	sed -i 's/name="CursorThemeSize" type="int" value="24"/name="CursorThemeSize" type="int" value="32"/'                                                      /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+	sed -i 's#</channel>#  <property name="Gdk" type="empty">\\n    <property name="WindowScalingFactor" type="int" value="2"/>\\n  </property>\\n</channel>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+	SCRIPT
+fi
+cat >> /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 
-sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                   /etc/xdg/qt6ct/qt6ct.conf
-sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt6ct/qt6ct.conf
+sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt5ct/qt5ct.conf
+sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf
+
+sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt6ct/qt6ct.conf
+sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt6ct/qt6ct.conf
 
 sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
 sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
@@ -194,15 +217,8 @@ ln --symbolic --force \$HOME/.face \$HOME/.face.icon
 
 head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
 cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
-  <entry key="free.suite.alertsdisabledforjre-1849443513" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-2220309211" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-277690372" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-3003353162" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-3187814639" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-4147451139" value="true"/>
+  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-439594872" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-492727137" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
   <entry key="free.suite.feedbackReportingEnabled" value="false"/>
   <entry key="eulacommunity" value="4"/>
@@ -226,15 +242,14 @@ RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
 GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
 BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
 
-xfconf-query --channel xfce4-desktop --list | grep -E '^/backdrop/' | sed 's#/[^/]\\+\$##' | sort -u | while read BACKDROP; do
-	xfconf-query --channel xfce4-desktop --property \$BACKDROP/image-style --create --type int --set 0
-	xfconf-query --channel xfce4-desktop --property \$BACKDROP/color-style --create --type int --set 0
-	xfconf-query --channel xfce4-desktop --property \$BACKDROP/rgba1       --create \\
-	             --type double --set \$RED \\
-	             --type double --set \$GREEN \\
-	             --type double --set \$BLUE \\
-	             --type double --set 1
-done
+xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-mode                      --create --type bool   --set true
+xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-number                    --create --type int    --set 0
+xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitorrdp0/workspace0/image-style --create --type int    --set 0
+xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitorrdp0/workspace0/color-style --create --type int    --set 0
+xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitorrdp0/workspace0/rgba1       --create --type double --set \$RED \\
+                                                                                                              --type double --set \$GREEN \\
+                                                                                                              --type double --set \$BLUE \\
+                                                                                                              --type double --set 1
 SCRIPT
 
 chmod 755 /usr/local/bin/set-background-to-solid-color.sh
@@ -290,6 +305,8 @@ EOF
 
 # Home directory setup
 #
+# FIXME: Change XCURSOR_SIZE to 48 once xorgxrdp > 0.10.0 is available!
+#
 RUN <<EOF
 cp --archive --force --no-target-directory /etc/skel /home/"$USER_NAME"
 
@@ -297,6 +314,9 @@ cat > /home/"$USER_NAME"/.bash_aliases << CONF
 #!/usr/bin/env bash
 
 export LANG=en_US.UTF-8
+
+alias pbcopy="\$(which xclip) -in -selection clipboard"
+alias pbpaste="\$(which xclip) -out -selection clipboard"
 
 function bash_prompt_precmd {
 	if [[ "\$NEWLINE_BEFORE_PROMPT" == "yes" ]]; then
@@ -399,6 +419,28 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
+if [ "$HIDPI" = "yes" ]; then
+	cat > /home/"$USER_NAME"/.config/autostart/set-gdk-window-scaling.desktop <<- AUTOSTART
+	[Desktop Entry]
+	Type=Application
+	Name=Set GTK/GNOME GDK window scaling factor
+	Exec=gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "[{'Gdk/WindowScalingFactor', <2>}]"
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	AUTOSTART
+
+	cat > /home/"$USER_NAME"/.config/autostart/set-gnome-interface-scaling.desktop <<- AUTOSTART
+	[Desktop Entry]
+	Type=Application
+	Name=Set GNOME interface scaling factor
+	Exec=gsettings set org.gnome.desktop.interface scaling-factor 2
+	StartupNotify=false
+	Terminal=false
+	Hidden=false
+	AUTOSTART
+fi
+
 cat > /home/"$USER_NAME"/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
@@ -460,6 +502,7 @@ CONF
 mkdir --parents /home/"$USER_NAME"/.java/.userPrefs/burp
 head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml
 cat >> /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml << CONF
+  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
   <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
   <entry key="free.suite.feedbackReportingEnabled" value="false"/>
@@ -482,6 +525,18 @@ cat > /home/"$USER_NAME"/.xsessionrc << CONF
 
 export LANG=en_US.UTF-8
 CONF
+
+if [ "$HIDPI" = "yes" ]; then
+	cat >> /home/"$USER_NAME"/.xsessionrc <<- CONF
+	export QT_SCALE_FACTOR=2
+	export XCURSOR_SIZE=32
+	export GDK_SCALE=2
+	export PLASMA_USE_QT_SCALING=1
+	export QT_AUTO_SCREEN_SCALE_FACTOR=1
+	export QT_ENABLE_HIGHDPI_SCALING=1
+	export ELM_SCALE=2
+	CONF
+fi
 
 mkdir --parents /home/"$USER_NAME"/Documents
 

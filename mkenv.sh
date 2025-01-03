@@ -200,11 +200,20 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 	# in practice most of the time a new engagement is only going to be
 	# built daily at worse, and more likely only once every 2 - 3 weeks.
 	#
+	# FIXME: The test for whether to set HIDPI_GUI to "yes" or "no"
+	# really should be smarter. Ideally, HIDPI_GUI would be "yes"
+	# whenever the host's primary display is larger than 1600 pixels on
+	# a side. However, this will require different tests for macOS,
+	# X.org, and Wayland, and I'm frankly just not sufficiently
+	# motivated right now.
+	#
 	HOST_SPECIFIC_FLAGS=()
 	if [[ "$OS" == "Darwin" ]]; then
 		CONNECTION_TOKEN="$(uuidgen | tr "[:upper:]" "[:lower:]")"
+		HIDPI_GUI="yes"
 	else
 		CONNECTION_TOKEN="$(uuidgen --random)"
+		HIDPI_GUI="no"
 		HOST_SPECIFIC_FLAGS+=(--userns keep-id:uid=1000,gid=1000)
 	fi
 
@@ -216,6 +225,7 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 
 	cat container/Dockerfile | "$PODMAN" build \
 		--no-cache \
+		--build-arg HIDPI="$HIDPI_GUI" \
 		--build-arg HOST_OS="$OS" \
 		--build-arg TIMEZONE="$TIMEZONE" \
 		--build-arg USER_NAME="$USER" \
