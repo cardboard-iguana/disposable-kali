@@ -96,15 +96,6 @@ distro_setup() {
 	sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
 	sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
 
-	cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
-	<?xml version="1.1" encoding="UTF-8"?>
-
-	<channel name="xfce4-notifyd" version="1.0">
-	  <property name="theme" type="string" value="Retro"/>
-	  <property name="notify-location" type="string" value="bottom-right"/>
-	</channel>
-	XML
-
 	sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 
 	sed -i 's/"Kali-Dark"/"Kali-Light"/'                  /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
@@ -425,12 +416,22 @@ distro_setup() {
 	EOF
 
 	mkdir --parents ./home/kali/.config/"Code - OSS"/User
-	cat > ./home/kali/.config/"Code - OSS"/User/settings.json <<- JSON
+	cat > ./home/kali/.config/"Code - OSS"/User/settings.json <<- EOF
 	{
 	    "window.titleBarStyle": "custom",
 	    "workbench.colorTheme": "Default Light Modern"
 	}
-	JSON
+	EOF
+
+	mkdir --parents ./home/kali/.config/xfce4/xfconf/xfce-perchannel-xml
+	cat > ./home/kali/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml <<- EOF
+	<?xml version="1.1" encoding="UTF-8"?>
+
+	<channel name="xfce4-notifyd" version="1.0">
+	  <property name="theme" type="string" value="Retro"/>
+	  <property name="notify-location" type="string" value="bottom-right"/>
+	</channel>
+	EOF
 
 	touch ./home/kali/.hushlogin
 

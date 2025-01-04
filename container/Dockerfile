@@ -120,15 +120,6 @@ sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                       
 sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
 
-cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
-<?xml version="1.1" encoding="UTF-8"?>
-
-<channel name="xfce4-notifyd" version="1.0">
-  <property name="theme" type="string" value="Retro"/>
-  <property name="notify-location" type="string" value="bottom-right"/>
-</channel>
-XML
-
 SCRIPT
 if [ "$HIDPI" = "yes" ]; then
 	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
@@ -488,6 +479,16 @@ cat > /home/"$USER_NAME"/.config/"Code - OSS"/User/settings.json << JSON
     "workbench.colorTheme": "Default Light Modern"
 }
 JSON
+
+mkdir --parents /home/"$USER_NAME"/.config/xfce4/xfconf/xfce-perchannel-xml
+cat > /home/"$USER_NAME"/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
+<?xml version="1.1" encoding="UTF-8"?>
+
+<channel name="xfce4-notifyd" version="1.0">
+  <property name="theme" type="string" value="Retro"/>
+  <property name="notify-location" type="string" value="bottom-right"/>
+</channel>
+XML
 
 touch /home/"$USER_NAME"/.hushlogin
 
