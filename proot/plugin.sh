@@ -258,12 +258,12 @@ distro_setup() {
 	sudo -u postgres /etc/init.d/postgresql start
 
 	export DISPLAY=:0
-	export GALLIUM_DRIVER=virpipe
 	export LANG=en_US.UTF-8
-	export MESA_GL_VERSION_OVERRIDE=4.5
+	#export MESA_LOADER_DRIVER_OVERRIDE=zink # FIXME - Enable this if/when zink drivers become available in Kali (these don't seem to exist as of January 19th 2025)
 	export PULSE_SERVER=tcp:127.0.0.1
 	export QT_QPA_PLATFORMTHEME=qt6ct
 	export SHELL=\$(which zsh)
+	export TU_DEBUG=noconform
 
 	dbus-launch --exit-with-session startxfce4
 
