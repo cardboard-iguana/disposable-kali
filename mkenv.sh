@@ -319,6 +319,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 
 	mkdir -p $HOME/.shortcuts/tasks
 	sed "s/{{environment-name}}/$NAME/" proot/widget.sh > $HOME/.shortcuts/tasks/"${NAME}.sh"
+	chmod +x $HOME/.shortcuts/tasks/"${NAME}.sh"
 else
 	echo "You should not be here."
 	exit 2
