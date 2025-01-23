@@ -75,6 +75,7 @@ startCLI () {
 
 	proot-distro login "$NAME" \
 		--user kali \
+		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
 		-- /usr/local/sbin/tui.sh
@@ -109,6 +110,7 @@ startGUI () {
 
 	proot-distro login "$NAME" \
 		--user kali \
+		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
 		-- /usr/local/sbin/gui.sh
@@ -247,7 +249,7 @@ prootRemove () {
 # Helper function that updates the guest's timezone.
 #
 updateTimeZone () {
-	proot-distro login "$NAME" -- bash -c "ln --symbolic --force /usr/share/zoneinfo/$(getprop persist.sys.timezone) /etc/localtime" &> /dev/null
+	proot-distro login "$NAME" --no-arch-warning -- bash -c "ln --symbolic --force /usr/share/zoneinfo/$(getprop persist.sys.timezone) /etc/localtime"
 }
 
 # PRoot Distro engages in some serious nannying around pentesting

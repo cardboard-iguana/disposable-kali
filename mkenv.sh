@@ -308,9 +308,9 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	#     FATAL:   Could not create shared memory segment: Function not implemented
 	#     DETAIL:  Failed system call was shmget
 	#
-	proot-distro login "$NAME" -- bash -c "su postgres --command=\"pg_createcluster 17 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
+	proot-distro login "$NAME" --no-arch-warning -- bash -c "su postgres --command=\"pg_createcluster 17 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
 
-	proot-distro login "$NAME" -- bash -c "echo \"kali:\$(uuidgen --random)\" | chpasswd"
+	proot-distro login "$NAME" --no-arch-warning -- bash -c "echo \"kali:\$(uuidgen --random)\" | chpasswd"
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 
