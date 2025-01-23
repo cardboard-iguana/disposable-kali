@@ -89,7 +89,7 @@ You will almost certainly want to enable Developer Mode and then set the followi
 Finally, make sure that `$HOME/bin` exists and is in your Termux `$PATH`.
 
 ## Usage
-To create a new engagement (container, control script, and data directory), just clone this repo and then run `mkenv.sh some-engagement-name` from inside of it.
+To create a new engagement (container, control script, and data directory), just clone this repo and then run `bash mkenv.sh some-engagement-name` from inside of it.
 
 At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below. A desktop launcher will also be created allowing for quick access; be aware that on macOS and Linux, the container will *not* terminate when finished, and must be manually stopped using `$CONTROL_SCRIPT stop`!
 

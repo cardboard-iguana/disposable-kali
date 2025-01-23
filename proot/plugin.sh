@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/bash
 
 DISTRO_NAME="{{distro-name}}"
 DISTRO_COMMENT="Kali Linux NetHunter (build date {{build-date}})"
