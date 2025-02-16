@@ -76,6 +76,18 @@ startGUI () {
 		unNerfProotDistro
 		updateTimeZone
 
+		rm --recursive --force $PREFIX/../home/.config/pulse
+		rm --recursive --force $PREFIX/tmp/dbus-*
+		rm --recursive --force $PREFIX/tmp/.ICE-unix
+		rm --recursive --force $PREFIX/tmp/*-kali
+		rm --recursive --force $PREFIX/tmp/*-kali.*
+		rm --recursive --force $PREFIX/tmp/*_kali
+		rm --recursive --force $PREFIX/tmp/proot-*
+		rm --recursive --force $PREFIX/tmp/pulse-*
+		rm --recursive --force $PREFIX/tmp/.virgl_test
+		rm --recursive --force $PREFIX/tmp/.X0-lock
+		rm --recursive --force $PREFIX/tmp/.X11-unix
+
 		termux-x11 :0 &> /dev/null &
 
 		export MESA_NO_ERROR=1
