@@ -34,9 +34,6 @@ case "$1" in
 	"archive")
 		CONTROL_FUNCTION="archiveEngagement"
 		;;
-	"delete")
-		CONTROL_FUNCTION="deleteEngagement"
-		;;
 	*)
 		CONTROL_FUNCTION="scriptHelp"
 		;;
@@ -57,7 +54,6 @@ if [[ "$CONTROL_FUNCTION" == "scriptHelp" ]]; then
 	echo "  backup   Commit changes to the underlying image and back it up"
 	echo "  restore  Restore an image/container pair from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
-	echo "  delete   Remove all engagement data"
 
 	exit
 fi
@@ -421,34 +417,6 @@ archiveEngagement () {
 
 	echo ""
 	echo "Engagement $NAME has been archived in $ENGAGEMENT_DIR."
-}
-
-# Remove all engagement data.
-#
-deleteEngagement () {
-	echo "You are about to PERMENANTLY DELETE the container, control script,"
-	echo "and data directory for $NAME. The following objects will be deleted:"
-	echo ""
-	echo "  Podman Container:     $NAME ($CONTAINER_ID)"
-	echo "  Engagement Directory: $ENGAGEMENT_DIR"
-	echo "  Control Script:       $SCRIPT"
-	echo ""
-	read -p "Please confirm by typing YES (all capitals): " CONFIRMATION
-
-	if [[ "$CONFIRMATION" == "YES" ]]; then
-		stopContainer
-		removeContainerImagePair
-		stopMachine
-
-		echo ">>>> Deleting engagement directory..."
-		rm -rf "$ENGAGEMENT_DIR"
-
-		echo ""
-		echo "Engagement $NAME has been deleted."
-	else
-		echo ""
-		echo "Engagement deletion aborted."
-	fi
 }
 
 # Back up the container in ENGAGEMENT_DIR.

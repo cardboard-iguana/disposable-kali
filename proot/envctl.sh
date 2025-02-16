@@ -62,7 +62,6 @@ scriptHelp () {
 	echo "  backup   Back up the engagement environment"
 	echo "  restore  Restore the engagement environment from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
-	echo "  delete   Remove all engagement data"
 	echo ""
 	echo "Note that only a single engagement environment may be run at a time."
 }
@@ -145,35 +144,6 @@ archiveEngagement () {
 
 	echo ""
 	echo "Engagement $NAME has been archived in $ENGAGEMENT_DIR."
-}
-
-# Remove all engagement data.
-#
-deleteEngagement () {
-	echo "You are about to PERMENANTLY DELETE the engagement environment,"
-	echo "PRoot plugin, control script, and data directory for $NAME. The"
-	echo "following objects will be deleted:"
-	echo ""
-	echo "  PRoot Directory:      $DISTRO_ROOT"
-	echo "  PRoot Plugin:         $PREFIX/etc/proot-distro/${NAME}.override.sh"
-	echo "  Engagement Directory: $ENGAGEMENT_DIR"
-	echo "  Control Script:       $SCRIPT"
-	echo ""
-	read -p "Please confirm by typing YES (all capitals): " CONFIRMATION
-
-	if [[ "$CONFIRMATION" == "YES" ]]; then
-		unNerfProotDistro
-		prootRemove
-
-		echo ">>>> Deleting engagement directory..."
-		rm --recursive --force "$ENGAGEMENT_DIR"
-
-		echo ""
-		echo "Engagement $NAME has been deleted."
-	else
-		echo ""
-		echo "Engagement deletion aborted."
-	fi
 }
 
 # Back up the engagement environment in ENGAGEMENT_DIR.
@@ -285,9 +255,6 @@ case "$1" in
 		;;
 	"archive")
 		archiveEngagement
-		;;
-	"delete")
-		deleteEngagement
 		;;
 	*)
 		scriptHelp
