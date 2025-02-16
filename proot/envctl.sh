@@ -72,7 +72,7 @@ startCLI () {
 }
 
 startGUI () {
-	if [[ $(ps auxww | grep termux-x11 | grep -vc grep) -eq 0 ]]; then
+	if [[ $(ps auxww | grep com.termux.x11 | grep -vc grep) -eq 0 ]]; then
 		unNerfProotDistro
 		updateTimeZone
 
