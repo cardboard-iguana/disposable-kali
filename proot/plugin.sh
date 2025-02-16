@@ -119,7 +119,7 @@ distro_setup() {
 
 	# PostgreSQL upgrade hack
 	#
-	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-17.prerm
+	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-??.prerm
 
 	# FIXME: Unfortunately, setting the XFCE desktop backdrop is broken as
 	# of 2025-01-02 for outputs whose names contain spaces. This causes
