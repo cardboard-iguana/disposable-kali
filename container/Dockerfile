@@ -39,7 +39,6 @@ apt install --quiet --assume-yes \
     fonts-noto-ui-extra \
     fonts-noto-unhinted \
     kali-desktop-xfce \
-    kali-hidpi-mode \
     kali-undercover \
     less \
     metasploit-framework \

@@ -305,7 +305,6 @@ startGUI () {
 		networkautodetect:i:0
 		redirectprinters:i:0
 		autoreconnection enabled:i:1
-		forcehidpioptimizations:i:1
 		session bpp:i:24
 		audiomode:i:0
 		bandwidthautodetect:i:1
