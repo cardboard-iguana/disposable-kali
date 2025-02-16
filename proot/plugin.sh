@@ -41,6 +41,7 @@ distro_setup() {
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
+		tmux \
 		tumbler \
 		uuid-runtime \
 		xclip \
@@ -243,8 +244,9 @@ distro_setup() {
 
 	export LANG=en_US.UTF-8
 	export SHELL=\$(which zsh)
+	export TMUX_TMPDIR=\$HOME/.tmux
 
-	/usr/bin/env zsh
+	/usr/bin/env tmux -2 new-session
 
 	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
@@ -262,6 +264,7 @@ distro_setup() {
 	export PULSE_SERVER=tcp:127.0.0.1
 	export QT_QPA_PLATFORMTHEME=qt6ct
 	export SHELL=\$(which zsh)
+	export TMUX_TMPDIR=\$HOME/.tmux
 	export TU_DEBUG=noconform
 
 	dbus-launch --exit-with-session startxfce4
@@ -482,6 +485,20 @@ distro_setup() {
 	EOF
 	chmod 700 ./home/kali/.ssh
 	chmod 600 ./home/kali/.ssh/*
+
+	mkdir -p ./home/kali/.tmux
+	cat > ./home/kali/.tmux.conf <<- EOF
+	set-option -g default-shell /usr/bin/zsh
+	set-option -g default-terminal tmux-256color
+	set-option -g allow-passthrough off
+	set-option -g history-limit 65536
+
+	set-option -g mouse on
+	set-option -s set-clipboard off
+
+	bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+	bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+	EOF
 
 	cat > ./home/kali/.zshenv <<- EOF
 	#!/usr/bin/env zsh

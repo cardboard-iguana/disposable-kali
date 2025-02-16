@@ -46,6 +46,7 @@ apt install --quiet --assume-yes \
     openssh-client \
     openvpn \
     recordmydesktop \
+    tmux \
     tumbler \
     uuid-runtime \
     xclip \
@@ -498,6 +499,18 @@ Host *
 CONF
 chmod 700 /home/"$USER_NAME"/.ssh
 chmod 600 /home/"$USER_NAME"/.ssh/*
+
+cat > /home/"$USER_NAME"/.tmux.conf << CONF
+set-option -g default-terminal tmux-256color
+set-option -g allow-passthrough off
+set-option -g history-limit 65536
+
+set-option -g mouse on
+set-option -s set-clipboard off
+
+bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
+CONF
 
 cat > /home/"$USER_NAME"/.xsessionrc << CONF
 #!/usr/bin/env bash
