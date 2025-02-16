@@ -166,7 +166,7 @@ distro_setup() {
 	sudo cp /usr/bin/systemctl    /usr/bin/systemctl.bin
 	sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
 
-	sudo -u postgres /etc/init.d/postgresql stop
+	sudo -u postgres /etc/init.d/postgresql start
 
 	sudo /usr/local/sbin/system-update-cleanup.sh
 
