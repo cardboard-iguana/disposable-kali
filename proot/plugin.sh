@@ -318,7 +318,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Disable session autosave
-	Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
+	Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -328,7 +328,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Disable session save-on-exit
-	Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+	Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -358,7 +358,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Set Flameshot full desktop screenshot shortcut
-	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
+	Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path ./home/kali/Desktop"
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -368,7 +368,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Set Flameshot selected area screenshot shortcut
-	Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path ./home/kali/Desktop"
+	Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path ./home/kali/Desktop"
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -378,7 +378,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Set Mousepad color scheme
-	Exec=gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
+	Exec=/usr/bin/gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -388,7 +388,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Set session name
-	Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+	Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -418,7 +418,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Disable Xfce screen saver
-	Exec=xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
+	Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
 	StartupNotify=false
 	Terminal=false
 	Hidden=true
@@ -428,7 +428,7 @@ distro_setup() {
 	[Desktop Entry]
 	Type=Application
 	Name=Disable Xfce lock screen
-	Exec=xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
+	Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
 	StartupNotify=false
 	Terminal=false
 	Hidden=true

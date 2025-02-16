@@ -353,7 +353,7 @@ cat > /home/"$USER_NAME"/.config/autostart/disable-session-autosave.desktop << A
 [Desktop Entry]
 Type=Application
 Name=Disable session autosave
-Exec=xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
+Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -363,7 +363,7 @@ cat > /home/"$USER_NAME"/.config/autostart/disable-session-save-on-exit.desktop 
 [Desktop Entry]
 Type=Application
 Name=Disable session save-on-exit
-Exec=xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
+Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -393,7 +393,7 @@ cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-desktop-shortcut.deskto
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot full desktop screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path \\"/home/$USER_NAME/Desktop\\""
+Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path \\"/home/$USER_NAME/Desktop\\""
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -403,7 +403,7 @@ cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-selection-shortcut.desk
 [Desktop Entry]
 Type=Application
 Name=Set Flameshot selected area screenshot shortcut
-Exec=xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path \\"/home/$USER_NAME/Desktop\\""
+Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path \\"/home/$USER_NAME/Desktop\\""
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -414,7 +414,7 @@ if [ "$HIDPI" = "yes" ]; then
 	[Desktop Entry]
 	Type=Application
 	Name=Set GTK/GNOME GDK window scaling factor
-	Exec=gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "[{'Gdk/WindowScalingFactor', <2>}]"
+	Exec=/usr/bin/gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "[{'Gdk/WindowScalingFactor', <2>}]"
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -424,7 +424,7 @@ if [ "$HIDPI" = "yes" ]; then
 	[Desktop Entry]
 	Type=Application
 	Name=Set GNOME interface scaling factor
-	Exec=gsettings set org.gnome.desktop.interface scaling-factor 2
+	Exec=/usr/bin/gsettings set org.gnome.desktop.interface scaling-factor 2
 	StartupNotify=false
 	Terminal=false
 	Hidden=false
@@ -435,7 +435,7 @@ cat > /home/"$USER_NAME"/.config/autostart/set-mousepad-color-scheme.desktop << 
 [Desktop Entry]
 Type=Application
 Name=Set Mousepad color scheme
-Exec=gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
+Exec=/usr/bin/gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -445,7 +445,7 @@ cat > /home/"$USER_NAME"/.config/autostart/set-session-name.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Set session name
-Exec=xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -475,7 +475,7 @@ cat > /home/"$USER_NAME"/.config/autostart/xfce-screensaver.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable Xfce screen saver
-Exec=xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
+Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
 StartupNotify=false
 Terminal=false
 Hidden=true
@@ -485,7 +485,7 @@ cat > /home/"$USER_NAME"/.config/autostart/xfce-lockscreen.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Disable Xfce lock screen
-Exec=xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
+Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
 StartupNotify=false
 Terminal=false
 Hidden=true
