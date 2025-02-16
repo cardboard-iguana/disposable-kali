@@ -118,11 +118,11 @@ startGUI () {
 			--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
 			-- /usr/local/sbin/gui.sh
 
-		pkill -9 dbus
+		{ pkill -9 dbus && wait ; } &> /dev/null
 
-		pkill --full pulseaudio
-		pkill --full virgl_test_server
-		pkill --full com.termux.x11
+		{ pkill --full pulseaudio && wait ; } &> /dev/null
+		{ pkill --full virgl_test_server && wait ; } &> /dev/null
+		{ pkill --full com.termux.x11 && wait ; } &> /dev/null
 
 		rm --recursive --force $PREFIX/../home/.config/pulse
 		rm --recursive --force $PREFIX/tmp/dbus-*

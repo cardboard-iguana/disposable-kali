@@ -120,14 +120,14 @@ fi
 #
 if [[ "$OS" == "Darwin" ]]; then
 	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
-		osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+		{ osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
 
 		DIALOG_PID=$!
 
 		echo ">>>> Starting Podman virtual machine..."
 		"$PODMAN" machine start --no-info 2> /dev/null
 
-		kill $DIALOG_PID
+		{ kill $DIALOG_PID && wait ; } &> /dev/null
 	fi
 fi
 
@@ -142,7 +142,7 @@ else
 fi
 
 if [[ "$OS" == "Darwin" ]]; then
-	osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+	{ osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
 
 	DIALOG_PID=$!
 
@@ -161,7 +161,7 @@ if [[ "$OS" == "Darwin" ]]; then
 	EOF
 	)"
 
-	kill $DIALOG_PID
+	{ kill $DIALOG_PID && wait ; } &> /dev/null
 else
 	if [[ $(ps auxww | grep freerdp | grep -c '/v:127.0.0.1:3389') -gt 0 ]]; then
 		RDP_CONNECTION_STATE="connected"
@@ -214,7 +214,7 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 			LAST_UPDATE=0
 		fi
 		if [[ $(( $(date "+%s") - $LAST_UPDATE )) -ge $(( 7 * 24 * 60 * 60 )) ]]; then
-			osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+			{ osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
 
 			DIALOG_PID=$!
 
@@ -226,7 +226,7 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 			mkdir -p $HOME/.cache/disposable-kali
 			date "+%s" > $HOME/.cache/disposable-kali/machine-update
 
-			kill $DIALOG_PID
+			{ kill $DIALOG_PID && wait ; } &> /dev/null
 		fi
 	else
 		if [[ "$PODMAN" == "$HOME/.cache/disposable-kali/podman-launcher" ]]; then
@@ -273,7 +273,7 @@ startEngagement () {
 
 stopEngagement () {
 	if [[ "$OS" == "Darwin" ]]; then
-			osascript -e "display dialog \"Waiting for the container to shut down...\n\" buttons {\"Dismiss\"} with title \"Stopping Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+			{ osascript -e "display dialog \"Waiting for the container to shut down...\n\" buttons {\"Dismiss\"} with title \"Stopping Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
 
 			DIALOG_PID=$!
 
@@ -282,7 +282,7 @@ stopEngagement () {
 			fi
 			stopMachine
 
-			kill $DIALOG_PID
+			{ kill $DIALOG_PID && wait ; } &> /dev/null
 	else
 		if [[ "$CONTAINER_STATE" == "running" ]]; then
 			if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
@@ -336,24 +336,26 @@ startGUI () {
 
 			open $HOME/.cache/disposable-kali/kali.rdp
 
-			osascript - <<- EOF
-			tell application "Windows App"
-			    activate
-			    tell application "System Events"
-			        repeat until ((exists window "Favorites" of application process "Windows App") or (exists window "Devices" of application process "Windows App") or (exists window "Apps" of application process "Windows App"))
-			            delay 1
-			        end repeat
-			    end tell
-			    delay 1
-			    activate
-			end tell
+			{
+				osascript - <<- EOF
+				tell application "Windows App"
+				    activate
+				    tell application "System Events"
+				        repeat until ((exists window "Favorites" of application process "Windows App") or (exists window "Devices" of application process "Windows App") or (exists window "Apps" of application process "Windows App"))
+				            delay 1
+				        end repeat
+				    end tell
+				    delay 1
+				    activate
+				end tell
 
-			tell application "System Events" to click text field 2 of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
+				tell application "System Events" to click text field 2 of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
 
-			tell application "System Events" to keystroke "$TOKEN"
+				tell application "System Events" to keystroke "$TOKEN"
 
-			tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
-			EOF
+				tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
+				EOF
+			} &> /dev/null
 		else
 			if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
 				FREERDP=wlfreerdp
@@ -585,17 +587,19 @@ removeContainerImagePair () {
 waitForIt () {
 	echo -n ">>>> Waiting for the container to finish booting"
 	if [[ "$OS" == "Darwin" ]]; then
-		osascript -e "display dialog \"Waiting for the container to finish booting...\n\" buttons {\"Dismiss\"} with title \"Starting Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" giving up after $WAIT" &> /dev/null &
+		{ osascript -e "display dialog \"Waiting for the container to finish booting...\n\" buttons {\"Dismiss\"} with title \"Starting Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" giving up after $WAIT" & } &> /dev/null
 	else
 		if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-			(
-				for STEP in $(seq 1 $WAIT); do
-					sleep 1
-				done
-			) | zenity --title="Starting Engagement $NAME" \
-		               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
-			           --text="Waiting for the container to finish booting..." \
-			           --progress --pulsate --auto-close --no-cancel &> /dev/null &
+			{
+				(
+					for STEP in $(seq 1 $WAIT); do
+						sleep 1
+					done
+				) | zenity --title="Starting Engagement $NAME" \
+			               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
+				           --text="Waiting for the container to finish booting..." \
+				           --progress --pulsate --auto-close --no-cancel &
+			} &> /dev/null
 		fi
 	fi
 	for STEP in $(seq 1 $WAIT); do
