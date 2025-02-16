@@ -7,6 +7,11 @@ TOKEN="{{connection-token}}"
 OS="$(uname)"
 WAIT=12
 
+# Core engagement files/data.
+#
+SCRIPT="$HOME/.local/bin/${NAME}.sh"
+ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
+
 # Flow control.
 #
 case "$1" in
@@ -115,34 +120,54 @@ fi
 #
 if [[ "$OS" == "Darwin" ]]; then
 	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
-		DIALOG_PID=""
+		osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
 
-		if [[ -n "$CONTAINER_ID" ]]; then
-			osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
-
-			DIALOG_PID=$!
-		fi
+		DIALOG_PID=$!
 
 		echo ">>>> Starting Podman virtual machine..."
-		"$PODMAN" machine start --no-info
+		"$PODMAN" machine start --no-info 2> /dev/null
 
-		if [[ -n "$CONTAINER_ID" ]] && [[ -n "$DIALOG_PID" ]]; then
-			kill $DIALOG_PID
-		fi
+		kill $DIALOG_PID
 	fi
 fi
 
-# Core engagement files/data.
+# State checks.
 #
-SCRIPT="$HOME/.local/bin/${NAME}.sh"
-ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
-
 if [[ "$("$PODMAN" container inspect "$NAME" 2> /dev/null)" != "[]" ]]; then
 	CONTAINER_ID="$("$PODMAN" container inspect --format "{{.ID}}" "$NAME" 2> /dev/null)"
 	CONTAINER_STATE="$("$PODMAN" container inspect --format "{{.State.Status}}" "$NAME" 2> /dev/null)"
 else
 	CONTAINER_ID=""
 	CONTAINER_STATE=""
+fi
+
+if [[ "$OS" == "Darwin" ]]; then
+	osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
+
+	DIALOG_PID=$!
+
+	RDP_CONNECTION_STATE="$(osascript <<- EOF
+	tell application "System Events"
+	    if application process "Windows App" exists then
+	        if menu item "kali - 127.0.0.1" of menu 1 of menu bar item "Window" of menu bar 1 of application process "Windows App" exists then
+	            return "connected"
+	        else
+	            return "disconnected"
+	        end if
+	    else
+	        return "disconnected"
+	    end if
+	end tell
+	EOF
+	)"
+
+	kill $DIALOG_PID
+else
+	if [[ $(ps auxww | grep freerdp | grep -c '/v:127.0.0.1:3389') -gt 0 ]]; then
+		RDP_CONNECTION_STATE="connected"
+	else
+		RDP_CONNECTION_STATE="disconnected"
+	fi
 fi
 
 # Sanity check environment.
@@ -285,56 +310,61 @@ startCLI () {
 }
 
 startGUI () {
-	startEngagement
+	if [[ "$RDP_CONNECTION_STATE" == "connected" ]]; then
+		startEngagement
 
-	if [[ "$OS" == "Darwin" ]]; then
-		mkdir -p $HOME/.cache/disposable-kali
+		if [[ "$OS" == "Darwin" ]]; then
+			mkdir -p $HOME/.cache/disposable-kali
 
-		cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
-		smart sizing:i:1
-		screen mode id:i:1
-		prompt for credentials on client:i:1
-		redirectsmartcards:i:0
-		redirectclipboard:i:1
-		full address:s:127.0.0.1
-		drivestoredirect:s:*
-		networkautodetect:i:0
-		redirectprinters:i:0
-		autoreconnection enabled:i:1
-		session bpp:i:24
-		audiomode:i:0
-		bandwidthautodetect:i:1
-		dynamic resolution:i:1
-		username:s:$USER
-		EOF
+			cat > $HOME/.cache/disposable-kali/kali.rdp <<- EOF
+			smart sizing:i:1
+			screen mode id:i:1
+			prompt for credentials on client:i:1
+			redirectsmartcards:i:0
+			redirectclipboard:i:1
+			full address:s:127.0.0.1
+			drivestoredirect:s:*
+			networkautodetect:i:0
+			redirectprinters:i:0
+			autoreconnection enabled:i:1
+			session bpp:i:24
+			audiomode:i:0
+			bandwidthautodetect:i:1
+			dynamic resolution:i:1
+			username:s:$USER
+			EOF
 
-		open $HOME/.cache/disposable-kali/kali.rdp
+			open $HOME/.cache/disposable-kali/kali.rdp
 
-		osascript - <<- EOF
-		tell application "Windows App"
-			activate
-			tell application "System Events"
-				repeat until ((exists window "Favorites" of application process "Windows App") or (exists window "Devices" of application process "Windows App") or (exists window "Apps" of application process "Windows App"))
-					delay 1
-				end repeat
+			osascript - <<- EOF
+			tell application "Windows App"
+			    activate
+			    tell application "System Events"
+			        repeat until ((exists window "Favorites" of application process "Windows App") or (exists window "Devices" of application process "Windows App") or (exists window "Apps" of application process "Windows App"))
+			            delay 1
+			        end repeat
+			    end tell
+			    delay 1
+			    activate
 			end tell
-			delay 1
-			activate
-		end tell
 
-		tell application "System Events" to click text field 2 of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
+			tell application "System Events" to click text field 2 of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
 
-		tell application "System Events" to keystroke "$TOKEN"
+			tell application "System Events" to keystroke "$TOKEN"
 
-		tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
-		EOF
-	else
-		if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
-			FREERDP=wlfreerdp
+			tell application "System Events" to click UI element "Continue" of sheet 1 of window "kali - 127.0.0.1" of application process "Windows App"
+			EOF
 		else
-			FREERDP=xfreerdp
+			if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -n "$(which wlfreerdp)" ]]; then
+				FREERDP=wlfreerdp
+			else
+				FREERDP=xfreerdp
+			fi
+			$FREERDP /bpp:24 /dynamic-resolution /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
 		fi
-		$FREERDP /bpp:24 /dynamic-resolution /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
+	else
+		echo "RDP connection already in use"
+		echo "Not starting desktop"
 	fi
 }
 
@@ -342,36 +372,7 @@ startGUI () {
 #
 desktopLauncher () {
 	if [[ "$CONTAINER_STATE" == "running" ]]; then
-		if [[ "$OS" == "Darwin" ]]; then
-			osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" &> /dev/null &
-
-			DIALOG_PID=$!
-
-			RDP_STATE="$(osascript <<- EOF
-			tell application "System Events"
-				if application process "Windows App" exists then
-					if menu item "kali - 127.0.0.1" of menu 1 of menu bar item "Window" of menu bar 1 of application process "Windows App" exists then
-						return "connected"
-					else
-						return "disconnected"
-					end if
-				else
-					return "disconnected"
-				end if
-			end tell
-			EOF
-			)"
-
-			kill $DIALOG_PID
-		else
-			if [[ $(ps auxww | grep freerdp | grep -c '/v:127.0.0.1:3389') -gt 0 ]]; then
-				RDP_STATE="connected"
-			else
-				RDP_STATE="disconnected"
-			fi
-		fi
-
-		if [[ "$RDP_STATE" == "connected" ]]; then
+		if [[ "$RDP_CONNECTION_STATE" == "connected" ]]; then
 			STATE_MESSAGE="currently running and connected"
 			ENABLE_START="no"
 			ENABLE_STOP="yes"

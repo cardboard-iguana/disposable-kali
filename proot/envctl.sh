@@ -40,13 +40,6 @@ if [[ "$SANITY" == "0%" ]]; then
 	fi
 	echo ""
 	exit 1
-elif [[ $(pgrep --full --count proot) -gt 0 ]]; then
-	echo "You can only run one engagement environment at a time. Currently running"
-	echo "proot instances:"
-	echo ""
-	pgrep --full proot
-	echo ""
-	exit 1
 fi
 
 # Print help.
@@ -62,8 +55,6 @@ scriptHelp () {
 	echo "  backup   Back up the engagement environment"
 	echo "  restore  Restore the engagement environment from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
-	echo ""
-	echo "Note that only a single engagement environment may be run at a time."
 }
 
 # Connect to the engagement environment.
@@ -81,56 +72,61 @@ startCLI () {
 }
 
 startGUI () {
-	unNerfProotDistro
-	updateTimeZone
+	if [[ $(ps auxww | grep termux-x11 | grep -vc grep) -eq 0 ]]; then
+		unNerfProotDistro
+		updateTimeZone
 
-	termux-x11 :0 &> /dev/null &
+		termux-x11 :0 &> /dev/null &
 
-	export MESA_NO_ERROR=1
-	export MESA_GL_VERSION_OVERRIDE=4.3COMPAT
-	export MESA_GLES_VERSION_OVERRIDE=3.2
-	export LIBGL_DRI_DISABLE=1
-	if [[ $(getprop ro.hardware.egl | grep -c "mali") -gt 0 ]] || [[ $(getprop ro.hardware.vulkan | grep -c "mali") -gt 0 ]]; then
-		virgl_test_server_android --angle-gl &> /dev/null &
+		export MESA_NO_ERROR=1
+		export MESA_GL_VERSION_OVERRIDE=4.3COMPAT
+		export MESA_GLES_VERSION_OVERRIDE=3.2
+		export LIBGL_DRI_DISABLE=1
+		if [[ $(getprop ro.hardware.egl | grep -c "mali") -gt 0 ]] || [[ $(getprop ro.hardware.vulkan | grep -c "mali") -gt 0 ]]; then
+			virgl_test_server_android --angle-gl &> /dev/null &
+		else
+			virgl_test_server_android &> /dev/null &
+		fi
+		unset MESA_NO_ERROR MESA_GL_VERSION_OVERRIDE MESA_GLES_VERSION_OVERRIDE LIBGL_DRI_DISABLE
+
+		if [[ "$(getprop ro.product.manufacturer | tr '[:upper:]' '[:lower:]')" == "samsung" ]]; then
+			export LD_PRELOAD=/system/lib64/libskcodec.so
+		fi
+		pulseaudio --start \
+		           --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
+		           --exit-idle-time=-1
+		unset LD_PRELOAD
+
+		am start-activity -W com.termux.x11/com.termux.x11.MainActivity
+
+		proot-distro login "$NAME" \
+			--user kali \
+			--no-arch-warning \
+			--shared-tmp \
+			--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
+			-- /usr/local/sbin/gui.sh
+
+		pkill -9 dbus
+
+		pkill --full pulseaudio
+		pkill --full virgl_test_server
+		pkill --full com.termux.x11
+
+		rm --recursive --force $PREFIX/../home/.config/pulse
+		rm --recursive --force $PREFIX/tmp/dbus-*
+		rm --recursive --force $PREFIX/tmp/.ICE-unix
+		rm --recursive --force $PREFIX/tmp/*-kali
+		rm --recursive --force $PREFIX/tmp/*-kali.*
+		rm --recursive --force $PREFIX/tmp/*_kali
+		rm --recursive --force $PREFIX/tmp/proot-*
+		rm --recursive --force $PREFIX/tmp/pulse-*
+		rm --recursive --force $PREFIX/tmp/.virgl_test
+		rm --recursive --force $PREFIX/tmp/.X0-lock
+		rm --recursive --force $PREFIX/tmp/.X11-unix
 	else
-		virgl_test_server_android &> /dev/null &
+		echo "X11 connection already in use"
+		echo "Not starting desktop"
 	fi
-	unset MESA_NO_ERROR MESA_GL_VERSION_OVERRIDE MESA_GLES_VERSION_OVERRIDE LIBGL_DRI_DISABLE
-
-	if [[ "$(getprop ro.product.manufacturer | tr '[:upper:]' '[:lower:]')" == "samsung" ]]; then
-		export LD_PRELOAD=/system/lib64/libskcodec.so
-	fi
-	pulseaudio --start \
-	           --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
-	           --exit-idle-time=-1
-	unset LD_PRELOAD
-
-	am start-activity -W com.termux.x11/com.termux.x11.MainActivity
-
-	proot-distro login "$NAME" \
-		--user kali \
-		--no-arch-warning \
-		--shared-tmp \
-		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
-		-- /usr/local/sbin/gui.sh
-
-	pkill -9 dbus
-
-	pkill --full pulseaudio
-	pkill --full virgl_test_server
-	pkill --full com.termux.x11
-
-	rm --recursive --force $PREFIX/../home/.config/pulse
-	rm --recursive --force $PREFIX/tmp/dbus-*
-	rm --recursive --force $PREFIX/tmp/.ICE-unix
-	rm --recursive --force $PREFIX/tmp/*-kali
-	rm --recursive --force $PREFIX/tmp/*-kali.*
-	rm --recursive --force $PREFIX/tmp/*_kali
-	rm --recursive --force $PREFIX/tmp/proot-*
-	rm --recursive --force $PREFIX/tmp/pulse-*
-	rm --recursive --force $PREFIX/tmp/.virgl_test
-	rm --recursive --force $PREFIX/tmp/.X0-lock
-	rm --recursive --force $PREFIX/tmp/.X11-unix
 }
 
 # Archive engagement environment, PRoot Distro plugin, and control
