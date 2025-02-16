@@ -15,9 +15,6 @@ ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 # Flow control.
 #
 case "$1" in
-	"launcher")
-		CONTROL_FUNCTION="desktopLauncher"
-		;;
 	"start")
 		CONTROL_FUNCTION="startEngagement"
 		;;
@@ -120,14 +117,8 @@ fi
 #
 if [[ "$OS" == "Darwin" ]]; then
 	if [[ $("$PODMAN" machine list --format "{{.Running}}" | grep -c "true") -eq 0 ]]; then
-		{ osascript -e "display dialog \"Starting the Podman virtual machine...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
-
-		DIALOG_PID=$!
-
 		echo ">>>> Starting Podman virtual machine..."
 		"$PODMAN" machine start --no-info 2> /dev/null
-
-		{ kill $DIALOG_PID && wait ; } &> /dev/null
 	fi
 fi
 
@@ -142,10 +133,7 @@ else
 fi
 
 if [[ "$OS" == "Darwin" ]]; then
-	{ osascript -e "display dialog \"Checking RDP connection state...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
-
-	DIALOG_PID=$!
-
+	echo ">>>> Checking RDP connection state..."
 	RDP_CONNECTION_STATE="$(osascript <<- EOF
 	tell application "System Events"
 	    if application process "Windows App" exists then
@@ -160,9 +148,8 @@ if [[ "$OS" == "Darwin" ]]; then
 	end tell
 	EOF
 	)"
-
-	{ kill $DIALOG_PID && wait ; } &> /dev/null
 else
+	echo ">>>> Checking X11 connection state..."
 	if [[ $(ps auxww | grep freerdp | grep -c '/v:127.0.0.1:3389') -gt 0 ]]; then
 		RDP_CONNECTION_STATE="connected"
 	else
@@ -214,10 +201,6 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 			LAST_UPDATE=0
 		fi
 		if [[ $(( $(date "+%s") - $LAST_UPDATE )) -ge $(( 7 * 24 * 60 * 60 )) ]]; then
-			{ osascript -e "display dialog \"Updating the Podman virtual machine. Please wait...\n\" buttons {\"Dismiss\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
-
-			DIALOG_PID=$!
-
 			echo ">>>> Upgrading Podman virtual machine..."
 			"$PODMAN" machine ssh 'sudo rpm-ostree upgrade'
 			"$PODMAN" machine stop
@@ -225,8 +208,6 @@ if [[ "$CONTAINER_STATE" != "running" ]]; then
 
 			mkdir -p $HOME/.cache/disposable-kali
 			date "+%s" > $HOME/.cache/disposable-kali/machine-update
-
-			{ kill $DIALOG_PID && wait ; } &> /dev/null
 		fi
 	else
 		if [[ "$PODMAN" == "$HOME/.cache/disposable-kali/podman-launcher" ]]; then
@@ -272,32 +253,11 @@ startEngagement () {
 }
 
 stopEngagement () {
+	if [[ "$CONTAINER_STATE" == "running" ]]; then
+		stopContainer
+	fi
 	if [[ "$OS" == "Darwin" ]]; then
-			{ osascript -e "display dialog \"Waiting for the container to shut down...\n\" buttons {\"Dismiss\"} with title \"Stopping Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\"" & } &> /dev/null
-
-			DIALOG_PID=$!
-
-			if [[ "$CONTAINER_STATE" == "running" ]]; then
-				stopContainer
-			fi
-			stopMachine
-
-			{ kill $DIALOG_PID && wait ; } &> /dev/null
-	else
-		if [[ "$CONTAINER_STATE" == "running" ]]; then
-			if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-				# Can't call stopContainer in a subshell...
-				echo ">>>> Stopping container..."
-				(
-					"$PODMAN" stop --time $WAIT "$NAME"
-				) | zenity --title="Stopping Engagement $NAME" \
-				           --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
-				           --text="Waiting for the container to shut down..." \
-				           --progress --pulsate --auto-close --no-cancel &> /dev/null
-			else
-				stopContainer
-			fi
-		fi
+		stopMachine
 	fi
 }
 
@@ -362,51 +322,11 @@ startGUI () {
 			else
 				FREERDP=xfreerdp
 			fi
-			$FREERDP /bpp:24 /dynamic-resolution /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389
+			{ $FREERDP /bpp:24 /dynamic-resolution /p:"$TOKEN" /rfx /u:"$USER" /v:127.0.0.1:3389 & } &> /dev/null
 		fi
 	else
 		echo "RDP connection already in use"
 		echo "Not starting desktop"
-	fi
-}
-
-# Desktop launcher functionality.
-#
-desktopLauncher () {
-	if [[ "$CONTAINER_STATE" == "running" ]]; then
-		if [[ "$RDP_CONNECTION_STATE" == "connected" ]]; then
-			STATE_MESSAGE="currently running and connected"
-			ENABLE_START="no"
-			ENABLE_STOP="yes"
-		else
-			STATE_MESSAGE="currently running and disconnected"
-			ENABLE_START="yes"
-			ENABLE_STOP="yes"
-		fi
-	else
-		STATE_MESSAGE="not running"
-		ENABLE_START="yes"
-		ENABLE_STOP="no"
-	fi
-
-	if [[ "$OS" == "Darwin" ]]; then
-		ACTION="$(osascript -e "display dialog \"The engagement is $STATE_MESSAGE.\n\" buttons {\"Connect to Engagement\",\"Stop Engagement\",\"Cancel\"} with title \"Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" default button \"Cancel\" cancel button \"Cancel\"" 2> /dev/null | sed 's#^button returned:##')"
-	elif [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-		# `zenity --question --switch` always returns 1
-		set +e
-		ACTION="$(zenity --title="Engagement $NAME" --window-icon=$HOME/.local/share/icons/"${NAME}.png" --text="The engagement is $STATE_MESSAGE." --question --switch --extra-button="Connect to Engagement" --extra-button="Stop Engagement" --extra-button="Cancel" 2> /dev/null)"
-		set -e
-	else
-		ACTION="Cancel"
-	fi
-	echo "$ACTION"
-
-	if [[ "$ACTION" == "Connect to Engagement" ]]; then
-		startGUI
-	elif [[ "$ACTION" == "Stop Engagement" ]]; then
-		stopEngagement
-	else
-		echo "Canceled"
 	fi
 }
 
@@ -475,29 +395,6 @@ restoreEngagement () {
 			cp "$RESTORE_TARGET" "$SCRIPT"
 			chmod 755 "$SCRIPT"
 		fi
-		if [[ "$OS" == "Darwin" ]]; then
-			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.app.podman.tar.gz | wc -l) -gt 0 ]]; then
-				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.app.podman.tar.gz | sort | tail -1)"
-				mkdir -p "$HOME/Applications"
-				(
-					cd "$ENGAGEMENT_DIR/Backups"
-					tar -xzf "$RESTORE_TARGET"
-					mv "${NAME}.app" "$HOME/Applications/"
-				)
-				dockutil --add $HOME/Applications/"${NAME}.app"
-			fi
-		else
-			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.png | wc -l) -gt 0 ]]; then
-				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.png | sort | tail -1)"
-				mkdir -p "$HOME/.local/share/icons"
-				cp "$RESTORE_TARGET" "$HOME/.local/share/icons/${NAME}.png"
-			fi
-			if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.desktop | wc -l) -gt 0 ]]; then
-				RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.podman.desktop | sort | tail -1)"
-				mkdir -p "$HOME/.local/share/applications"
-				cp "$RESTORE_TARGET" "$HOME/.local/share/applications/${NAME}.desktop"
-			fi
-		fi
 
 		stopMachine
 
@@ -545,16 +442,6 @@ commitToImage () {
 	echo ">>>> Exporting control files..."
 	cp "$SCRIPT" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.sh"
 
-	if [[ "$OS" == "Darwin" ]]; then
-		(
-			cd "$HOME/Applications"
-			tar -czf "$BACKUP_DIR/${NAME}.${TIMESTAMP}.app.podman.tar.gz" "${NAME}.app"
-		)
-	else
-		cp "$HOME/.local/share/applications/${NAME}.desktop" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.desktop"
-		cp "$HOME/.local/share/icons/${NAME}.png" "$BACKUP_DIR/${NAME}.${TIMESTAMP}.podman.png"
-	fi
-
 	echo ">>>> Removing temporary image..."
 	"$PODMAN" rmi --force "${NAME}:${TIMESTAMP}"
 }
@@ -573,35 +460,12 @@ removeContainerImagePair () {
 
 	echo ">>>> Removing control files..."
 	rm -f "$SCRIPT"
-	if [[ "$OS" == "Darwin" ]]; then
-		rm -rf "$HOME/Applications/${NAME}.app"
-		dockutil --remove $HOME/Applications/"${NAME}.app" 2> /dev/null
-	else
-		rm -f "$HOME/.local/share/applications/${NAME}.desktop"
-		rm -f "$HOME/.local/share/icons/${NAME}.png"
-	fi
 }
 
 # Sleep briefly to give the container a chance to finish booting.
 #
 waitForIt () {
 	echo -n ">>>> Waiting for the container to finish booting"
-	if [[ "$OS" == "Darwin" ]]; then
-		{ osascript -e "display dialog \"Waiting for the container to finish booting...\n\" buttons {\"Dismiss\"} with title \"Starting Engagement $NAME\" with icon POSIX file \"$HOME/Applications/${NAME}.app/${NAME}.icns\" giving up after $WAIT" & } &> /dev/null
-	else
-		if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
-			{
-				(
-					for STEP in $(seq 1 $WAIT); do
-						sleep 1
-					done
-				) | zenity --title="Starting Engagement $NAME" \
-			               --window-icon=$HOME/.local/share/icons/"${NAME}.png" \
-				           --text="Waiting for the container to finish booting..." \
-				           --progress --pulsate --auto-close --no-cancel &
-			} &> /dev/null
-		fi
-	fi
 	for STEP in $(seq 1 $WAIT); do
 		sleep 1
 		echo -n "."

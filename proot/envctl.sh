@@ -177,19 +177,6 @@ restoreEngagement () {
 			chmod 755 "$SCRIPT"
 		fi
 
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.widget | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.widget | sort | tail -1)"
-			mkdir --parents $HOME/.shortcuts/tasks
-			cp "$RESTORE_TARGET" $HOME/.shortcuts/tasks/"${NAME}.sh"
-			chmod 755 $HOME/.shortcuts/tasks/"${NAME}.sh"
-		fi
-
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.png | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.png | sort | tail -1)"
-			mkdir --parents $HOME/.shortcuts/icons
-			cp "$RESTORE_TARGET" $HOME/.shortcuts/icons/"${NAME}.sh.png"
-		fi
-
 		echo ""
 		echo "Engagement $NAME has been restored from the backup at $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | sort | tail -1)."
 	else
@@ -204,14 +191,10 @@ prootBackup () {
 	BACKUP_DIR="$ENGAGEMENT_DIR/Backups"
 	PROOT_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.tar"
 	ENVCTL_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.sh"
-	WIDGET_SH_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.widget"
-	WIDGET_PNG_BACKUP_FILE="$BACKUP_DIR/$NAME.$TIMESTAMP.proot.png"
 
 	mkdir --parents "$BACKUP_DIR"
 	proot-distro backup --output "$PROOT_BACKUP_FILE" "$NAME"
 	cp "$SCRIPT" "$ENVCTL_BACKUP_FILE"
-	cp $HOME/.shortcuts/tasks/"${NAME}.sh" "$WIDGET_SH_BACKUP_FILE"
-	cp $HOME/.shortcuts/icons/"${NAME}.sh.png" "$WIDGET_PNG_BACKUP_FILE"
 }
 
 # Helper function that removes PRoot data.
@@ -219,8 +202,6 @@ prootBackup () {
 prootRemove () {
 	proot-distro remove "$NAME"
 
-	rm --force $HOME/.shortcuts/icons/"${NAME}.sh.png"
-	rm --force $HOME/.shortcuts/tasks/"${NAME}.sh"
 	rm --force "$SCRIPT"
 }
 

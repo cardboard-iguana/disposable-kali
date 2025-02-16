@@ -242,32 +242,10 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 		fi
 	fi
 
-	# Setup control script and launcher.
+	# Setup control script.
 	#
 	sed "s/{{environment-name}}/$NAME/;s/{{connection-token}}/$CONNECTION_TOKEN/" container/envctl.sh > "$SCRIPT"
 
-	if [[ "$OS" == "Darwin" ]]; then
-		mkdir -p $HOME/Applications
-		cp container/launcher.tar /tmp
-		(
-			cd /tmp
-			tar -xvf launcher.tar
-			rm launcher.tar
-			sed "s/{{environment-name}}/$NAME/" launcher.app/launcher > launcher.app/"${NAME}"
-			rm launcher.app/launcher
-			chmod 755 launcher.app/"${NAME}"
-			mv launcher.app/launcher.icns launcher.app/"${NAME}.icns"
-			mv launcher.app $HOME/Applications/"${NAME}.app"
-		)
-
-		dockutil --add $HOME/Applications/"${NAME}.app"
-	else
-		mkdir -p $HOME/.local/share/icons
-		cp icons/wikimedia-kali-logo.png $HOME/.local/share/icons/"${NAME}.png"
-
-		mkdir -p $HOME/.local/share/applications
-		sed "s#{{environment-name}}#$NAME#;s#{{user-home}}#$HOME#" container/launcher.desktop > $HOME/.local/share/applications/"${NAME}.desktop"
-	fi
 elif [[ "$CODE_PATH" == "proot" ]]; then
 	# PRoot Distro engages in some serious nannying around pentesting
 	# distros. While I understand the Termux project's desire not to
@@ -304,12 +282,6 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 
-	mkdir -p $HOME/.shortcuts/icons
-	cp icons/wikimedia-kali-logo.png $HOME/.shortcuts/icons/"${NAME}.sh.png"
-
-	mkdir -p $HOME/.shortcuts/tasks
-	sed "s/{{environment-name}}/$NAME/" proot/widget.sh > $HOME/.shortcuts/tasks/"${NAME}.sh"
-	chmod +x $HOME/.shortcuts/tasks/"${NAME}.sh"
 else
 	echo "You should not be here."
 	exit 2

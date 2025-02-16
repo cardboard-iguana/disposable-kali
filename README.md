@@ -5,7 +5,6 @@ This setup is probably sufficiently opinionated that it won't be useful out-of-t
 
 ## Prerequisits
 ### macOS
-- [dockutil](https://github.com/kcrawford/dockutil)
 - [Podman](https://podman.io/)
 - [Microsoft Remote Desktop](https://apps.apple.com/us/app/microsoft-remote-desktop/id1295203466) (or another RDP client)
 
@@ -25,7 +24,7 @@ brew analytics off
 
 # Install actual prerequisits
 #
-brew install dockutil microsoft-remote-desktop podman
+brew install microsoft-remote-desktop podman
 ```
 
 **Note:** Podman is weird about how the default virtual machine gets set. If you use multiple virtual machines (*i.e.*, `podman machine list` has more entries than just `podman-machine-default`), you'll probably periodically get errors where the `$CONTROL_SCRIPT` can't find your container. If you see this, try resetting the default VM using ``podman system connection default podman-machine-default`.
@@ -37,14 +36,13 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 - [Podman](https://podman.io/)
 - `uuidgen`
 - [XFreeRDP or wlFreeRDP](https://www.freerdp.com/)
-- [Zenity](https://gitlab.gnome.org/GNOME/zenity)
 
 On [Debian](https://debian.org/):
 
 ```bash
 # Alternately, replace `freerdp2-x11` with `freerdp2-wayland`.
 #
-apt install bc freerdp2-x11 podman uuid-runtime zenity
+apt install bc freerdp2-x11 podman uuid-runtime
 ```
 
 **Note:** You may need to add sub-UIDs/GIDs for your user:
@@ -59,7 +57,6 @@ Finally, make sure that `$HOME/.local/bin` exists and is in your `$PATH`.
 ### Android
 - [Termux](https://f-droid.org/en/packages/com.termux/)
 - [Termux:X11](https://github.com/termux/termux-x11)
-- [Termux:Widget](https://github.com/termux/termux-widget) (optional)
 
 A couple of Termux packages are also required:
 
@@ -71,11 +68,6 @@ pkg install x11-repo
 # Install required packages.
 #
 pkg install proot-distro pulseaudio termux-am termux-x11-nightly virglrenderer-android which
-
-# If using Termux:Widget, tudo will also need to be installed
-#
-curl --location https://github.com/agnostic-apollo/tudo/releases/latest/download/tudo --output $PREFIX/bin/tudo
-chmod 755 $PREFIX/bin/tudo
 
 # Enable access to device storage.
 #
@@ -91,7 +83,7 @@ Finally, make sure that `$HOME/bin` exists and is in your Termux `$PATH`.
 ## Usage
 To create a new engagement (container, control script, and data directory), just clone this repo and then run `bash mkenv.sh some-engagement-name` from inside of it.
 
-At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below. A desktop launcher will also be created allowing for quick access; be aware that on macOS and Linux, the container will *not* terminate when finished, and must be manually stopped using `$CONTROL_SCRIPT stop`!
+At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
 
 ### Linux and macOS
 - `$CONTROL_SCRIPT start`: Start the engagement's container.
@@ -103,7 +95,7 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 - `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
 
-**Note:** On macOS, the first time you start an environment's desktop, you will be asked to grant either the Terminal app (if calling `$CONTROL_SCRIPT` directly) or `env` "Accessibility Access". You will need to do this in the System Settings app and then re-connect. On the next run, you will be asked to grant access to the "System Events" app. You should not be asked for these permissions again, or for subsequent engagements.
+**Note:** On macOS, the first time you start an environment's desktop, you will be asked to grant either the Terminal app or `env` "Accessibility Access". You will need to do this in the System Settings app and then re-connect. On the next run, you will be asked to grant access to the "System Events" app. You should not be asked for these permissions again, or for subsequent engagements.
 
 ### Android
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement environment.
