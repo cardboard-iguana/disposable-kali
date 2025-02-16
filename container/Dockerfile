@@ -1,7 +1,6 @@
 FROM registry.hub.docker.com/kalilinux/kali-rolling:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG HIDPI
 ARG HOST_OS
 ARG TIMEZONE
 ARG USER_NAME
@@ -119,28 +118,10 @@ sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                       
 sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
 
-SCRIPT
-if [ "$HIDPI" = "yes" ]; then
-	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
-	sed -i 's/"Kali-Dark"/"Kali-Light-xHiDPI"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
-	SCRIPT
-else
-	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
-	sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
-	SCRIPT
-fi
-cat >> /usr/local/sbin/system-update-cleanup.sh << SCRIPT
+sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 
 sed -i 's/"Kali-Dark"/"Kali-Light"/'                                                                                                                       /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/'                                                                                                      /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-SCRIPT
-if [ "$HIDPI" = "yes" ]; then
-	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
-	sed -i 's/name="CursorThemeSize" type="int" value="24"/name="CursorThemeSize" type="int" value="32"/'                                                      /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-	sed -i 's#</channel>#  <property name="Gdk" type="empty">\\n    <property name="WindowScalingFactor" type="int" value="2"/>\\n  </property>\\n</channel>#' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-	SCRIPT
-fi
-cat >> /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 
 sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt5ct/qt5ct.conf
 sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf
@@ -409,28 +390,6 @@ Terminal=false
 Hidden=false
 AUTOSTART
 
-if [ "$HIDPI" = "yes" ]; then
-	cat > /home/"$USER_NAME"/.config/autostart/set-gdk-window-scaling.desktop <<- AUTOSTART
-	[Desktop Entry]
-	Type=Application
-	Name=Set GTK/GNOME GDK window scaling factor
-	Exec=/usr/bin/gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "[{'Gdk/WindowScalingFactor', <2>}]"
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	AUTOSTART
-
-	cat > /home/"$USER_NAME"/.config/autostart/set-gnome-interface-scaling.desktop <<- AUTOSTART
-	[Desktop Entry]
-	Type=Application
-	Name=Set GNOME interface scaling factor
-	Exec=/usr/bin/gsettings set org.gnome.desktop.interface scaling-factor 2
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	AUTOSTART
-fi
-
 cat > /home/"$USER_NAME"/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
@@ -545,18 +504,6 @@ cat > /home/"$USER_NAME"/.xsessionrc << CONF
 
 export LANG=en_US.UTF-8
 CONF
-
-if [ "$HIDPI" = "yes" ]; then
-	cat >> /home/"$USER_NAME"/.xsessionrc <<- CONF
-	export QT_SCALE_FACTOR=2
-	export XCURSOR_SIZE=32
-	export GDK_SCALE=2
-	export PLASMA_USE_QT_SCALING=1
-	export QT_AUTO_SCREEN_SCALE_FACTOR=1
-	export QT_ENABLE_HIGHDPI_SCALING=1
-	export ELM_SCALE=2
-	CONF
-fi
 
 mkdir --parents /home/"$USER_NAME"/Documents
 
