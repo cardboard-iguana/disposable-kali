@@ -464,8 +464,28 @@ AUTOSTART
 cat > /home/"$USER_NAME"/.config/autostart/xscreensaver.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
-Name=Disable screen saver
+Name=Disable X screen saver
 Exec=/usr/bin/true
+StartupNotify=false
+Terminal=false
+Hidden=true
+AUTOSTART
+
+cat > /home/"$USER_NAME"/.config/autostart/xfce-screensaver.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable Xfce screen saver
+Exec=xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
+StartupNotify=false
+Terminal=false
+Hidden=true
+AUTOSTART
+
+cat > /home/"$USER_NAME"/.config/autostart/xfce-lockscreen.desktop << AUTOSTART
+[Desktop Entry]
+Type=Application
+Name=Disable Xfce lock screen
+Exec=xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
 StartupNotify=false
 Terminal=false
 Hidden=true

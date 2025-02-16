@@ -407,8 +407,28 @@ distro_setup() {
 	cat > ./home/kali/.config/autostart/xscreensaver.desktop <<- EOF
 	[Desktop Entry]
 	Type=Application
-	Name=Disable screen saver
+	Name=Disable X screen saver
 	Exec=/usr/bin/true
+	StartupNotify=false
+	Terminal=false
+	Hidden=true
+	EOF
+
+	cat > ./home/kali/.config/autostart/xfce-screensaver.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable Xfce screen saver
+	Exec=xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
+	StartupNotify=false
+	Terminal=false
+	Hidden=true
+	EOF
+
+	cat > ./home/kali/.config/autostart/xfce-lockscreen.desktop <<- EOF
+	[Desktop Entry]
+	Type=Application
+	Name=Disable Xfce lock screen
+	Exec=xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
 	StartupNotify=false
 	Terminal=false
 	Hidden=true
