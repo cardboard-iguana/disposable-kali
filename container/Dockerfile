@@ -21,23 +21,13 @@ apt update       --quiet --assume-yes --fix-missing
 apt full-upgrade --quiet --assume-yes --fix-broken
 
 apt install --quiet --assume-yes \
-    asciinema \
     bc \
     build-essential \
     burpsuite \
     code-oss \
     dialog \
-    flameshot \
-    fonts-droid-fallback \
-    fonts-liberation \
-    fonts-liberation-sans-narrow \
     fonts-noto \
-    fonts-noto-cjk-extra \
-    fonts-noto-color-emoji \
-    fonts-noto-extra \
-    fonts-noto-ui-core \
-    fonts-noto-ui-extra \
-    fonts-noto-unhinted \
+    fonts-recommended \
     kali-desktop-xfce \
     kali-undercover \
     less \
@@ -47,7 +37,6 @@ apt install --quiet --assume-yes \
     nano \
     openssh-client \
     openvpn \
-    recordmydesktop \
     tmux \
     tumbler \
     uuid-runtime \
@@ -113,32 +102,6 @@ RUN <<EOF
 cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 #!/usr/bin/env bash
 
-# Desktop customizations
-#
-sed -i 's#\\(^    <property name="panel-1" type="empty">$\\)#    <property name="dark-mode" type="bool" value="true"/>\\n\\1#' /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                                        /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="size" type="uint" value="28"/name="size" type="uint" value="44"/'                                              /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="icon-size" type="uint" value="22"/name="icon-size" type="uint" value="24"/'                                    /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="show-labels" type="bool" value="false"/name="show-labels" type="bool" value="true"/'                           /etc/xdg/xfce4/panel/default.xml
-sed -i 's/name="grouping" type="uint" value="1"/name="grouping" type="bool" value="false"/'                                    /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"Cantarell 11"/"Noto Mono 11"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"%_H:%M"/"%Y-%m-%d @ %H:%M:%S %Z"/'                                                                                  /etc/xdg/xfce4/panel/default.xml
-sed -i 's/"+lock-screen"/"-lock-screen"/'                                                                                      /etc/xdg/xfce4/panel/default.xml
-
-sed -i 's/"Kali-Dark"/"Kali-Light"/' /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
-
-sed -i 's/"Kali-Dark"/"Kali-Light"/'                                                                                                                       /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-sed -i 's/"Flat-Remix-Blue-Dark"/"Windows-10-Icons"/'                                                                                                      /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
-
-sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt5ct/qt5ct.conf
-sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf
-
-sed -i 's/^icon_theme=.\\+/icon_theme=Windows-10-Icons/'                                      /etc/xdg/qt6ct/qt6ct.conf
-sed -i 's#^color_scheme_path=.\\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt6ct/qt6ct.conf
-
-sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/'           /etc/xdg/qterminal.org/qterminal.ini
-sed -i 's/^ApplicationTransparency=.\\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini
-
 # Fix VS Code files
 #
 sed -i 's#/usr/lib/code-oss/code-oss#/usr/bin/code-oss#' /usr/share/applications/code-oss.desktop
@@ -189,33 +152,20 @@ sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
 
 sudo /usr/local/sbin/system-update-cleanup.sh
 
-cp --archive --force --no-target-directory /etc/skel \$HOME
-
-ln --symbolic --force \$HOME/.face \$HOME/.face.icon
-
-head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > \$HOME/.java/.userPrefs/burp/prefs.xml
-cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
-  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
-  <entry key="free.suite.feedbackReportingEnabled" value="false"/>
-  <entry key="eulacommunity" value="4"/>
-</map>
-CONF
-
 mise upgrade
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
 EOF
 
-# We need a custom script to make sure that XFCE's background is set
-# consistently to a solid color (and *stays* set between sessions)
+# Enforce user-level customizations
 #
 RUN <<EOF
-cat > /usr/local/bin/set-background-to-solid-color.sh << SCRIPT
+cat > /usr/local/bin/user-settings.sh << SCRIPT
 #!/usr/bin/env bash
 
+# Make sure that XFCE's background is set consistently to match XRDP
+#
 XRDP_BG_COLOR="\$(grep -E '^blue=' /etc/xrdp/xrdp.ini | sed 's/.\\+=//' | tr '[:lower:]' '[:upper:]')"
 
 RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
@@ -230,9 +180,44 @@ xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitorrdp0/wo
                                                                                                               --type double --set \$GREEN \\
                                                                                                               --type double --set \$BLUE \\
                                                                                                               --type double --set 1
+
+# Set theme
+#
+gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
+gsettings set org.gnome.desktop.interface        gtk-theme    Kali-Light
+gsettings set org.gnome.desktop.interface        icon-theme   Windows-10-Icons
+
+xfconf-query --channel xfce4-notifyd --property /theme                                 --create --type string --set Retro
+xfconf-query --channel xfce4-notifyd --property /notify-location                       --create --type string --set bottom-right
+xfconf-query --channel xfce4-panel   --property /panels/dark-mode                      --create --type bool   --set true
+xfconf-query --channel xfce4-panel   --property /panels/panel-1/icon-size              --create --type uint   --set 24
+xfconf-query --channel xfce4-panel   --property /panels/panel-1/position               --create --type string --set "p=8;x=0;y=0"
+xfconf-query --channel xfce4-panel   --property /panels/panel-1/size                   --create --type uint   --set 44
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-11/show-labels         --create --type bool   --set true
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-11/grouping            --create --type bool   --set false
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-19/digital-time-format --create --type string --set "%Y-%m-%d @ %H:%M:%S %Z"
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-19/digital-time-font   --create --type string --set "Noto Mono 11"
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-22/items               --create --type string --set "-lock-screen" \\
+                                                                                                --type string --set "+logout"
+xfconf-query --channel xfce4-panel   --property /plugins/plugin-2200/items             --create --type string --set "-lock-screen" \\
+                                                                                                --type string --set "+logout"
+xfconf-query --channel xfwm4         --property /general/theme                         --create --type string --set Kali-Light
+xfconf-query --channel xsettings     --property /Net/IconThemeName                     --create --type string --set Windows-10-Icons
+xfconf-query --channel xsettings     --property /Net/ThemeName                         --create --type string --set Kali-Light
+
+# Disable session saving
+#
+xfconf-query --channel xfce4-session --property /general/AutoSave    --create --type bool --set false
+xfconf-query --channel xfce4-session --property /general/SaveOnExit  --create --type bool --set false
+xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+
+# Disable screensaver
+#
+xfconf-query --channel xfce4-screensaver --property /lock/enabled  --create --type bool --set false
+xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
 SCRIPT
 
-chmod 755 /usr/local/bin/set-background-to-solid-color.sh
+chmod 755 /usr/local/bin/user-settings.sh
 EOF
 
 # Create container startup script
@@ -339,26 +324,6 @@ CONF
 
 mkdir --parents /home/"$USER_NAME"/.config/autostart
 
-cat > /home/"$USER_NAME"/.config/autostart/disable-session-autosave.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session autosave
-Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/AutoSave --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/disable-session-save-on-exit.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable session save-on-exit
-Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SaveOnExit --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
 cat > /home/"$USER_NAME"/.config/autostart/nm-applet.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
@@ -369,51 +334,11 @@ Terminal=false
 Hidden=true
 AUTOSTART
 
-cat > /home/"$USER_NAME"/.config/autostart/set-background-to-solid-color.desktop << AUTOSTART
+cat > /home/"$USER_NAME"/.config/autostart/user-settings.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
-Name=Set background to solid color
-Exec=/usr/local/bin/set-background-to-solid-color.sh
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-desktop-shortcut.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set Flameshot full desktop screenshot shortcut
-Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Shift><Alt>p" --create --type string --set "flameshot full --clipboard --path \\"/home/$USER_NAME/Desktop\\""
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/set-flameshot-selection-shortcut.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set Flameshot selected area screenshot shortcut
-Exec=/usr/bin/xfconf-query --channel xfce4-keyboard-shortcuts --property "/commands/custom/<Primary><Alt>p" --create --type string --set "flameshot gui --clipboard --path \\"/home/$USER_NAME/Desktop\\""
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/set-mousepad-color-scheme.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set Mousepad color scheme
-Exec=/usr/bin/gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
-StartupNotify=false
-Terminal=false
-Hidden=false
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/set-session-name.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Set session name
-Exec=/usr/bin/xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
+Name=Configure user settings
+Exec=/usr/local/bin/user-settings.sh
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -439,26 +364,6 @@ Terminal=false
 Hidden=true
 AUTOSTART
 
-cat > /home/"$USER_NAME"/.config/autostart/xfce-screensaver.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable Xfce screen saver
-Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=true
-AUTOSTART
-
-cat > /home/"$USER_NAME"/.config/autostart/xfce-lockscreen.desktop << AUTOSTART
-[Desktop Entry]
-Type=Application
-Name=Disable Xfce lock screen
-Exec=/usr/bin/xfconf-query --channel xfce4-screensaver --property /lock/enabled --create --type bool --set false
-StartupNotify=false
-Terminal=false
-Hidden=true
-AUTOSTART
-
 mkdir --parents /home/"$USER_NAME"/.config/"Code - OSS"/User
 cat > /home/"$USER_NAME"/.config/"Code - OSS"/User/settings.json << JSON
 {
@@ -467,15 +372,28 @@ cat > /home/"$USER_NAME"/.config/"Code - OSS"/User/settings.json << JSON
 }
 JSON
 
-mkdir --parents /home/"$USER_NAME"/.config/xfce4/xfconf/xfce-perchannel-xml
-cat > /home/"$USER_NAME"/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml << XML
-<?xml version="1.1" encoding="UTF-8"?>
+mkdir --parents /home/"$USER_NAME"/.config/gtk-3.0
+cat > /home/"$USER_NAME"/.config/gtk-3.0/settings.ini << INI
+[Settings]
+gtk-icon-theme-name = Windows-10-Icons
+gtk-theme-name = Kali-Light
+INI
 
-<channel name="xfce4-notifyd" version="1.0">
-  <property name="theme" type="string" value="Retro"/>
-  <property name="notify-location" type="string" value="bottom-right"/>
-</channel>
-XML
+mkdir --parents /home/"$USER_NAME"/.config/qt5ct
+sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf > /home/"$USER_NAME"/.config/qt5ct/qt5ct.conf
+
+mkdir --parents /home/"$USER_NAME"/.config/qt6ct
+sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt6ct/colors/Kali-Light.conf#' /etc/xdg/qt6ct/qt6ct.conf > /home/"$USER_NAME"/.config/qt6ct/qt6ct.conf
+
+mkdir --parents /home/"$USER_NAME"/.config/qterminal.org
+sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/;s/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini > /home/"$USER_NAME"/.config/qterminal.org/qterminal.ini
+
+ln --symbolic --force /home/"$USER_NAME"/.face /home/"$USER_NAME"/.face.icon
+
+cat > /home/"$USER_NAME"/.gtkrc-2.0 << INI
+gtk-icon-theme-name = "Windows-10-Icons"
+gtk-theme-name = "Kali-Light"
+INI
 
 touch /home/"$USER_NAME"/.hushlogin
 
@@ -490,9 +408,6 @@ CONF
 mkdir --parents /home/"$USER_NAME"/.java/.userPrefs/burp
 head --lines -1 /etc/skel/.java/.userPrefs/burp/prefs.xml > /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml
 cat >> /home/"$USER_NAME"/.java/.userPrefs/burp/prefs.xml << CONF
-  <entry key="free.suite.alertsdisabledforjre-1743307703" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-4166355790" value="true"/>
-  <entry key="free.suite.alertsdisabledforjre-576990537" value="true"/>
   <entry key="free.suite.feedbackReportingEnabled" value="false"/>
   <entry key="eulacommunity" value="4"/>
 </map>

@@ -220,6 +220,7 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 		--build-arg TIMEZONE="$TIMEZONE" \
 		--build-arg USER_NAME="$USER" \
 		--secret id=connection-token,src="$TOKEN_FILE" \
+		--squash-all \
 		--tag "$NAME" -
 
 	rm "$TOKEN_FILE"
@@ -233,6 +234,9 @@ if [[ "$CODE_PATH" == "podman" ]]; then
 	                 --mount type=bind,source="$ENGAGEMENT_DIR",destination=/home/$USER/Documents \
 	                 --mount type=bind,source=$HOME/.cache/disposable-kali/localtime,destination=/etc/localtime.host,readonly \
 	                   "${HOST_SPECIFIC_FLAGS[@]}" "$NAME"
+
+	"$PODMAN" builder prune --all --force > /dev/null
+	"$PODMAN" image   prune --all --force > /dev/null
 
 	# Shut down the Podman VM, unless it's still being used for something.
 	#

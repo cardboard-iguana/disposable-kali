@@ -65,6 +65,9 @@ startCLI () {
 
 	proot-distro login "$NAME" \
 		--user kali \
+		--env LANG=en_US.UTF-8 \
+		--env SHELL=/usr/bin/zsh \
+		--env TMUX_TMPDIR=/home/kali/.tmux \
 		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
@@ -111,8 +114,19 @@ startGUI () {
 
 		am start-activity -W com.termux.x11/com.termux.x11.MainActivity
 
+		# FIXME: Add MESA_LOADER_DRIVER_OVERRIDE=zink as an environment
+		# variable if/when zink drivers become available in Kali (these
+		# don't seem to exist as of January 19th 2025).
+		#
 		proot-distro login "$NAME" \
 			--user kali \
+			--env DISPLAY=:0 \
+			--env LANG=en_US.UTF-8 \
+			--env PULSE_SERVER=tcp:127.0.0.1 \
+			--env QT_QPA_PLATFORMTHEME=qt6ct \
+			--env SHELL=/usr/bin/zsh \
+			--env TMUX_TMPDIR=/home/kali/.tmux \
+			--env TU_DEBUG=noconform \
 			--no-arch-warning \
 			--shared-tmp \
 			--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
@@ -139,6 +153,22 @@ startGUI () {
 		echo "X11 connection already in use"
 		echo "Not starting desktop"
 	fi
+}
+
+# Update the engagement environment.
+#
+updateEngagement () {
+	unNerfProotDistro
+	updateTimeZone
+
+	proot-distro login "$NAME" \
+		--user kali \
+		--env LANG=en_US.UTF-8 \
+		--env SHELL=/usr/bin/zsh \
+		--no-arch-warning \
+		--shared-tmp \
+		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
+		-- /usr/local/bin/update.sh
 }
 
 # Archive engagement environment, PRoot Distro plugin, and control
@@ -235,6 +265,9 @@ case "$1" in
 		;;
 	"desktop")
 		startGUI
+		;;
+	"update")
+		updateEngagement
 		;;
 	"backup")
 		backupEngagement

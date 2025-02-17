@@ -27,6 +27,9 @@ case "$1" in
 	"desktop")
 		CONTROL_FUNCTION="startGUI"
 		;;
+	"update")
+		CONTROL_FUNCTION="updateEngagement"
+		;;
 	"backup")
 		CONTROL_FUNCTION="backupEngagement"
 		;;
@@ -270,7 +273,7 @@ startCLI () {
 }
 
 startGUI () {
-	if [[ "$RDP_CONNECTION_STATE" == "connected" ]]; then
+	if [[ "$RDP_CONNECTION_STATE" == "disconnected" ]]; then
 		startEngagement
 
 		if [[ "$OS" == "Darwin" ]]; then
@@ -328,6 +331,14 @@ startGUI () {
 		echo "RDP connection already in use"
 		echo "Not starting desktop"
 	fi
+}
+
+# Update the engagement container.
+#
+updateEngagement () {
+	startEngagement
+
+	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/local/bin/update.sh
 }
 
 # Archive container and control script in ENGAGEMENT_DIR.
