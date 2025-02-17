@@ -50,8 +50,8 @@ scriptHelp () {
 	echo "Interact with the $NAME engagement environment."
 	echo ""
 	echo "Available commands:"
+	echo "  app      Launch an app in the engagement environment"
 	echo "  shell    Connect to a shell in the engagement environment"
-	echo "  desktop  Connect to a desktop in the engagement environment"
 	echo "  backup   Back up the engagement environment"
 	echo "  restore  Restore the engagement environment from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
@@ -59,6 +59,34 @@ scriptHelp () {
 
 # Connect to the engagement environment.
 #
+# FIXME - Add MESA_LOADER_DRIVER_OVERRIDE=zink to ADDITIONAL_ENVIRONMENT
+# once the zink MESA driver is available in Kali
+#
+launchApp () {
+	unNerfProotDistro
+	updateTimeZone
+
+	ADDITIONAL_ENVIRONMENT=()
+	if [[ -n "$DISPLAY" ]]; then
+		ADDITIONAL_ENVIRONMENT+=(--env DISPLAY=$DISPLAY)
+		ADDITIONAL_ENVIRONMENT+=(--env QT_QPA_PLATFORMTHEME=qt6ct)
+		ADDITIONAL_ENVIRONMENT+=(--env TU_DEBUG=noconform)
+	fi
+	if [[ -n "$PULSE_SERVER" ]]; then
+		ADDITIONAL_ENVIRONMENT+=(--env PULSE_SERVER=$PULSE_SERVER)
+	fi
+
+	proot-distro login "$NAME" \
+		--user kali \
+		--env LANG=en_US.UTF-8 \
+		--env SHELL=/usr/bin/zsh \
+		--env TMUX_TMPDIR=/home/kali/.tmux \
+		--no-arch-warning \
+		--shared-tmp \
+		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
+		"${ADDITIONAL_ENVIRONMENT[@]}" -- "${@:2}"
+}
+
 startCLI () {
 	unNerfProotDistro
 	updateTimeZone
@@ -72,87 +100,6 @@ startCLI () {
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
 		-- /usr/local/sbin/tui.sh
-}
-
-startGUI () {
-	if [[ $(ps auxww | grep com.termux.x11 | grep -vc grep) -eq 0 ]]; then
-		unNerfProotDistro
-		updateTimeZone
-
-		rm --recursive --force $PREFIX/../home/.config/pulse
-		rm --recursive --force $PREFIX/tmp/dbus-*
-		rm --recursive --force $PREFIX/tmp/.ICE-unix
-		rm --recursive --force $PREFIX/tmp/*-kali
-		rm --recursive --force $PREFIX/tmp/*-kali.*
-		rm --recursive --force $PREFIX/tmp/*_kali
-		rm --recursive --force $PREFIX/tmp/proot-*
-		rm --recursive --force $PREFIX/tmp/pulse-*
-		rm --recursive --force $PREFIX/tmp/.virgl_test
-		rm --recursive --force $PREFIX/tmp/.X0-lock
-		rm --recursive --force $PREFIX/tmp/.X11-unix
-
-		termux-x11 :0 &> /dev/null &
-
-		export MESA_NO_ERROR=1
-		export MESA_GL_VERSION_OVERRIDE=4.3COMPAT
-		export MESA_GLES_VERSION_OVERRIDE=3.2
-		export LIBGL_DRI_DISABLE=1
-		if [[ $(getprop ro.hardware.egl | grep -c "mali") -gt 0 ]] || [[ $(getprop ro.hardware.vulkan | grep -c "mali") -gt 0 ]]; then
-			virgl_test_server_android --angle-gl &> /dev/null &
-		else
-			virgl_test_server_android &> /dev/null &
-		fi
-		unset MESA_NO_ERROR MESA_GL_VERSION_OVERRIDE MESA_GLES_VERSION_OVERRIDE LIBGL_DRI_DISABLE
-
-		if [[ "$(getprop ro.product.manufacturer | tr '[:upper:]' '[:lower:]')" == "samsung" ]]; then
-			export LD_PRELOAD=/system/lib64/libskcodec.so
-		fi
-		pulseaudio --start \
-		           --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
-		           --exit-idle-time=-1
-		unset LD_PRELOAD
-
-		am start-activity -W com.termux.x11/com.termux.x11.MainActivity
-
-		# FIXME: Add MESA_LOADER_DRIVER_OVERRIDE=zink as an environment
-		# variable if/when zink drivers become available in Kali (these
-		# don't seem to exist as of January 19th 2025).
-		#
-		proot-distro login "$NAME" \
-			--user kali \
-			--env DISPLAY=:0 \
-			--env LANG=en_US.UTF-8 \
-			--env PULSE_SERVER=tcp:127.0.0.1 \
-			--env QT_QPA_PLATFORMTHEME=qt6ct \
-			--env SHELL=/usr/bin/zsh \
-			--env TMUX_TMPDIR=/home/kali/.tmux \
-			--env TU_DEBUG=noconform \
-			--no-arch-warning \
-			--shared-tmp \
-			--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
-			-- /usr/local/sbin/gui.sh
-
-		{ pkill -9 dbus && wait ; } &> /dev/null
-
-		{ pkill --full pulseaudio && wait ; } &> /dev/null
-		{ pkill --full virgl_test_server && wait ; } &> /dev/null
-		{ pkill --full com.termux.x11 && wait ; } &> /dev/null
-
-		rm --recursive --force $PREFIX/../home/.config/pulse
-		rm --recursive --force $PREFIX/tmp/dbus-*
-		rm --recursive --force $PREFIX/tmp/.ICE-unix
-		rm --recursive --force $PREFIX/tmp/*-kali
-		rm --recursive --force $PREFIX/tmp/*-kali.*
-		rm --recursive --force $PREFIX/tmp/*_kali
-		rm --recursive --force $PREFIX/tmp/proot-*
-		rm --recursive --force $PREFIX/tmp/pulse-*
-		rm --recursive --force $PREFIX/tmp/.virgl_test
-		rm --recursive --force $PREFIX/tmp/.X0-lock
-		rm --recursive --force $PREFIX/tmp/.X11-unix
-	else
-		echo "X11 connection already in use"
-		echo "Not starting desktop"
-	fi
 }
 
 # Update the engagement environment.
@@ -260,11 +207,11 @@ unNerfProotDistro () {
 # Flow control.
 #
 case "$1" in
+	"app")
+		launchApp
+		;;
 	"shell")
 		startCLI
-		;;
-	"desktop")
-		startGUI
 		;;
 	"update")
 		updateEngagement
