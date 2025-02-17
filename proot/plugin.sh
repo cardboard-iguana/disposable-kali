@@ -6,11 +6,13 @@ TARBALL_URL['aarch64']="https://kali.download/nethunter-images/current/rootfs/ka
 TARBALL_SHA256['aarch64']="{{tarball-sha256}}"
 
 distro_setup() {
-	# Install applications
+	# Configure APT
 	#
 	echo 'APT::Install-Recommends "false";' >  ./etc/apt/apt.conf.d/minimal-installs
 	echo 'APT::Install-Suggests "false";'   >> ./etc/apt/apt.conf.d/minimal-installs
 
+	# Install base system
+	#
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt update       --quiet --assume-yes --fix-missing
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt full-upgrade --quiet --assume-yes --fix-broken
 
@@ -18,6 +20,7 @@ distro_setup() {
 		asciinema \
 		at-spi2-core \
 		bc \
+		build-essential \
 		burpsuite \
 		code-oss \
 		dialog \
@@ -35,9 +38,10 @@ distro_setup() {
 		kali-desktop-xfce \
 		kali-undercover \
 		less \
+		libffi-dev \
+		libyaml-dev \
 		metasploit-framework \
 		nano \
-		npm \
 		openssh-client \
 		pm-utils \
 		recordmydesktop \
@@ -47,21 +51,33 @@ distro_setup() {
 		xclip \
 		xfce4-notifyd \
 		xorg \
-		yarnpkg
+		zlib1g-dev
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt autoremove --quiet --assume-yes --purge --autoremove
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt clean      --quiet --assume-yes
 
-	# System configuration
+	# Install mise
+	#
+	mkdir --parents ./etc/apt/keyrings
+	mkdir --parents ./etc/apt/sources.list.d
+
+	run_proot_cmd bash -c "curl --silent --location https://mise.jdx.dev/gpg-key.pub | gpg --dearmor > /etc/apt/keyrings/mise-archive-keyring.gpg"
+	echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg] https://mise.jdx.dev/deb stable main" > ./etc/apt/sources.list.d/mise.list
+
+	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt update  --quiet --assume-yes
+	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes mise
+
+	# Make sure locale is built
 	#
 	sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/' ./etc/locale.gen
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive dpkg-reconfigure locales
 
+	# Set time zone
+	#
 	run_proot_cmd ln --symbolic --force /usr/share/zoneinfo/$(getprop persist.sys.timezone) /etc/localtime
 
-	mkdir --parents ./usr/local/bin
-	run_proot_cmd ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
-
+	# Create systemctl hack script
+	#
 	cat > ./usr/bin/systemctl.sh <<- EOF
 	#!/usr/bin/env bash
 	service \$2 \$1
@@ -72,6 +88,8 @@ distro_setup() {
 	cp ./usr/bin/systemctl    ./usr/bin/systemctl.bin
 	cp ./usr/bin/systemctl.sh ./usr/bin/systemctl
 
+	# Hush various logins
+	#
 	touch ./root/.hushlogin
 	touch ./var/lib/postgresql/.hushlogin
 
@@ -184,6 +202,8 @@ distro_setup() {
 	  <entry key="eulacommunity" value="4"/>
 	</map>
 	CONF
+
+	mise upgrade
 	EOF
 
 	chmod 755 ./usr/local/bin/update.sh
@@ -235,7 +255,7 @@ distro_setup() {
 	}
 	EOF
 
-	# Create startup scripts.
+	# Create startup scripts
 	#
 	cat > ./usr/local/sbin/tui.sh <<- EOF
 	#!/usr/bin/env bash
@@ -274,7 +294,7 @@ distro_setup() {
 
 	chmod 755 ./usr/local/sbin/gui.sh
 
-	# Generate local self-signed certificate (for PostgreSQL).
+	# Generate local self-signed certificate (for PostgreSQL)
 	#
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive make-ssl-cert generate-default-snakeoil
 	chmod 600 ./etc/ssl/private/ssl-cert-snakeoil.key
@@ -285,7 +305,7 @@ distro_setup() {
 
 	echo "kali ALL=(ALL:ALL) NOPASSWD: ALL" > ./etc/sudoers.d/kali
 
-	# Home directory setup.
+	# Home directory setup
 	#
 	cp --archive --force --no-target-directory ./etc/skel ./home/kali
 
@@ -478,7 +498,7 @@ distro_setup() {
 
 	echo "set tabsize 4" > ./home/kali/.nanorc
 
-	mkdir -p ./home/kali/.ssh
+	mkdir --parents ./home/kali/.ssh
 	cat > ./home/kali/.ssh/config <<- EOF
 	Host *
 	    ForwardAgent no
@@ -486,7 +506,7 @@ distro_setup() {
 	chmod 700 ./home/kali/.ssh
 	chmod 600 ./home/kali/.ssh/*
 
-	mkdir -p ./home/kali/.tmux
+	mkdir --parents ./home/kali/.tmux
 	cat > ./home/kali/.tmux.conf <<- EOF
 	set-option -g default-shell /usr/bin/zsh
 	set-option -g default-terminal tmux-256color
@@ -509,6 +529,12 @@ distro_setup() {
 	alias pbpaste="\$(which xclip) -out -selection clipboard"
 
 	[[ -f /tmp/okc-ssh-agent.env ]] && source /tmp/okc-ssh-agent.env
+
+	if [[ "\$SHELL" =~ .*/zsh$ ]]; then
+	    eval "\$(mise activate zsh)"
+	elif [[ "\$SHELL" =~ .*/bash$ ]]; then
+	    eval "\$(mise activate bash)"
+	fi
 	EOF
 
 	ln --symbolic --force .zshenv ./home/kali/.bash_aliases

@@ -23,6 +23,7 @@ apt full-upgrade --quiet --assume-yes --fix-broken
 apt install --quiet --assume-yes \
     asciinema \
     bc \
+    build-essential \
     burpsuite \
     code-oss \
     dialog \
@@ -40,9 +41,10 @@ apt install --quiet --assume-yes \
     kali-desktop-xfce \
     kali-undercover \
     less \
+    libffi-dev \
+    libyaml-dev \
     metasploit-framework \
     nano \
-    npm \
     openssh-client \
     openvpn \
     recordmydesktop \
@@ -54,10 +56,23 @@ apt install --quiet --assume-yes \
     xorg \
     xorgxrdp \
     xrdp \
-    yarnpkg
+    zlib1g-dev
 
 apt autoremove --quiet --assume-yes --purge --autoremove
 apt clean      --quiet --assume-yes
+EOF
+
+# Install mise
+#
+RUN <<EOF
+mkdir --parents /etc/apt/keyrings
+mkdir --parents /etc/apt/sources.list.d
+
+curl --silent --location https://mise.jdx.dev/gpg-key.pub | gpg --dearmor > /etc/apt/keyrings/mise-archive-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg] https://mise.jdx.dev/deb stable main" > /etc/apt/sources.list.d/mise.list
+
+apt update  --quiet --assume-yes
+apt install --quiet --assume-yes mise
 EOF
 
 # Make sure locale is built
@@ -70,13 +85,6 @@ EOF
 # Set time zone
 #
 RUN ln --symbolic --force /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
-
-# Some things expect a `yarn` command, rather than `yarnpkg`
-#
-RUN <<EOF
-mkdir --parents /usr/local/bin
-ln --symbolic --force /usr/bin/yarnpkg /usr/local/bin/yarn
-EOF
 
 # Create systemctl hack script
 #
@@ -106,8 +114,6 @@ cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
 #!/usr/bin/env bash
 
 # Desktop customizations
-#
-# FIXME: Change CursorThemeSize to 48 once xorgxrdp > 0.10.0 is available!
 #
 sed -i 's#\\(^    <property name="panel-1" type="empty">$\\)#    <property name="dark-mode" type="bool" value="true"/>\\n\\1#' /etc/xdg/xfce4/panel/default.xml
 sed -i 's/"p=6;x=0;y=0"/"p=8;x=0;y=0"/'                                                                                        /etc/xdg/xfce4/panel/default.xml
@@ -196,6 +202,8 @@ cat >> \$HOME/.java/.userPrefs/burp/prefs.xml << CONF
   <entry key="eulacommunity" value="4"/>
 </map>
 CONF
+
+mise upgrade
 SCRIPT
 
 chmod 755 /usr/local/bin/update.sh
@@ -277,8 +285,6 @@ EOF
 
 # Home directory setup
 #
-# FIXME: Change XCURSOR_SIZE to 48 once xorgxrdp > 0.10.0 is available!
-#
 RUN <<EOF
 cp --archive --force --no-target-directory /etc/skel /home/"$USER_NAME"
 
@@ -301,6 +307,8 @@ function bash_prompt_precmd {
 	date "+%Y-%m-%d @ %H:%M:%S %Z"
 }
 PROMPT_COMMAND=bash_prompt_precmd
+
+eval "\$(mise activate bash)"
 CONF
 
 mkdir --parents /home/"$USER_NAME"/.BurpSuite
@@ -492,7 +500,7 @@ CONF
 
 echo "set tabsize 4" > /home/"$USER_NAME"/.nanorc
 
-mkdir -p /home/"$USER_NAME"/.ssh
+mkdir --parents /home/"$USER_NAME"/.ssh
 cat > /home/"$USER_NAME"/.ssh/config << CONF
 Host *
     ForwardAgent no
