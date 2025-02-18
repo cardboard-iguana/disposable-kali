@@ -126,11 +126,11 @@ export PULSE_SERVER=tcp:127.0.0.1
 dbus-launch --exit-with-session xfce4-session
 unset DISPLAY GALLIUM_DRIVER PULSE_SERVER
 
-{ pkill --full pulseaudio && wait ; } &> /dev/null
-{ pkill --full virgl_test_server && wait ; } &> /dev/null
-{ pkill --full com.termux.x11 && wait ; } &> /dev/null
+pkill --full pulseaudio
+pkill --full virgl_test_server
+pkill --full com.termux.x11
 
-{ pkill -9 dbus && wait ; } &> /dev/null 
+pkill -9 dbus
 
 rm --recursive --force \$PREFIX/../home/.config/pulse
 rm --recursive --force \$PREFIX/tmp/dbus-*
