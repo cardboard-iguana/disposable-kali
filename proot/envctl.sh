@@ -4,17 +4,17 @@ NAME="{{environment-name}}"
 
 # Core engagement files/data.
 #
-SCRIPT="$HOME/bin/${NAME}.sh"
+SCRIPT="$HOME/bin/${NAME}"
 ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
 DISTRO_ROOT="$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME"
 
 # Sanity check environment.
 #
-if [[ "$1" == "restore" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
+if [[ "$1" == "--restore" ]] || [[ "$1" == "-r" ]] && [[ -d "$ENGAGEMENT_DIR" ]]; then
 	SANITY="100%"
 elif [[ -d "$DISTRO_ROOT" ]] && [[ -d "$ENGAGEMENT_DIR" ]] && [[ -f "$SCRIPT" ]]; then
 	SANITY="100%"
-elif [[ "$1" == "help" ]] || [[ -z "$1" ]]; then
+elif [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ -z "$1" ]]; then
 	SANITY="100%"
 else
 	SANITY="0%"
@@ -45,16 +45,23 @@ fi
 # Print help.
 #
 scriptHelp () {
-	echo "Usage: $(basename "$0") COMMAND"
+	echo "Usage: $(basename "$0") <OPTION OR COMMAND>"
 	echo ""
 	echo "Interact with the $NAME engagement environment."
 	echo ""
-	echo "Available commands:"
-	echo "  app      Launch an app in the engagement environment"
-	echo "  shell    Connect to a shell in the engagement environment"
-	echo "  backup   Back up the engagement environment"
-	echo "  restore  Restore the engagement environment from the most recent backup"
-	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
+	echo "Available options:"
+	echo "  --help,    -h  Display this help message"
+	echo "  --update,  -u  Update the packages installed in the engagement"
+	echo "  --backup,  -b  Back up the engagement"
+	echo "  --restore, -r  Restore the engagement from the most recent backup"
+	echo "  --archive, -a  Archive the engagement to $ENGAGEMENT_DIR"
+	echo ""
+	echo "If no options are provided, the remainder of the command line is"
+	echo "interpreted as a command (with its own options) to run in the engagement"
+	echo "environment."
+	echo ""
+	echo "If no option OR command is provided, a tmux shell will be opened in the"
+	echo "engagement environment."
 }
 
 # Connect to the engagement environment.
@@ -84,12 +91,22 @@ launchApp () {
 		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
-		"${ADDITIONAL_ENVIRONMENT[@]}" -- "${@:2}"
+		"${ADDITIONAL_ENVIRONMENT[@]}" -- "$@"
 }
 
 startCLI () {
 	unNerfProotDistro
 	updateTimeZone
+
+	ADDITIONAL_ENVIRONMENT=()
+	if [[ -n "$DISPLAY" ]]; then
+		ADDITIONAL_ENVIRONMENT+=(--env DISPLAY=$DISPLAY)
+		ADDITIONAL_ENVIRONMENT+=(--env QT_QPA_PLATFORMTHEME=qt6ct)
+		ADDITIONAL_ENVIRONMENT+=(--env TU_DEBUG=noconform)
+	fi
+	if [[ -n "$PULSE_SERVER" ]]; then
+		ADDITIONAL_ENVIRONMENT+=(--env PULSE_SERVER=$PULSE_SERVER)
+	fi
 
 	proot-distro login "$NAME" \
 		--user kali \
@@ -99,7 +116,7 @@ startCLI () {
 		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
-		-- /usr/local/sbin/tui.sh
+		"${ADDITIONAL_ENVIRONMENT[@]}" -- /usr/local/sbin/tui
 }
 
 # Update the engagement environment.
@@ -115,7 +132,7 @@ updateEngagement () {
 		--no-arch-warning \
 		--shared-tmp \
 		--bind ${ENGAGEMENT_DIR}:/home/kali/Documents \
-		-- /usr/local/bin/update.sh
+		-- /usr/local/bin/update
 }
 
 # Archive engagement environment, PRoot Distro plugin, and control
@@ -142,17 +159,23 @@ backupEngagement () {
 #
 restoreEngagement () {
 	unNerfProotDistro
-	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | wc -l) -gt 0 ]]; then
+	if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/$NAME.*.proot.tar | wc -l) -gt 0 ]]; then
 
 		RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | sort | tail -1)"
+		RESTORE_TIMESTAMP="$(basename "$RESTORE_TARGET" .proot.tar | sed "s/^.*\.//")"
 
 		proot-distro restore "$RESTORE_TARGET"
 
-		if [[ $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.sh | wc -l) -gt 0 ]]; then
-			RESTORE_TARGET="$(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.sh | sort | tail -1)"
-			cp "$RESTORE_TARGET" "$SCRIPT"
+		if [[ -f "$ENGAGEMENT_DIR/Backups"/$NAME.$RESTORE_TIMESTAMP.proot.sh ]]; then
+			cp "$ENGAGEMENT_DIR/Backups"/$NAME.$RESTORE_TIMESTAMP.proot.sh "$SCRIPT"
 			chmod 755 "$SCRIPT"
 		fi
+
+		mkdir --parents $HOME/.local/share/applications
+		for DESKTOP_FILE in $(ls -1 "$ENGAGEMENT_DIR/Backups"/${NAME}-*.$RESTORE_TIMESTAMP.proot.desktop); do
+			DESKTOP_FILE_NAME="$(basename "$DESKTOP_FILE" .$RESTORE_TIMESTAMP.proot.desktop)"
+			cp "$DESKTOP_FILE" $HOME/.local/share/applications/$DESKTOP_FILE_NAME.desktop
+		done
 
 		echo ""
 		echo "Engagement $NAME has been restored from the backup at $(ls -1 "$ENGAGEMENT_DIR/Backups"/*.proot.tar | sort | tail -1)."
@@ -172,6 +195,11 @@ prootBackup () {
 	mkdir --parents "$BACKUP_DIR"
 	proot-distro backup --output "$PROOT_BACKUP_FILE" "$NAME"
 	cp "$SCRIPT" "$ENVCTL_BACKUP_FILE"
+
+	for DESKTOP_FILE in $(ls -1 $HOME/.local/share/applications/${NAME}-*.desktop); do
+		DESKTOP_FILE_NAME="$(basename "$DESKTOP_FILE" .desktop)"
+		cp "$DESKTOP_FILE" "$BACKUP_DIR/$DESKTOP_FILE_NAME.$TIMESTAMP.proot.desktop"
+	done
 }
 
 # Helper function that removes PRoot data.
@@ -180,6 +208,7 @@ prootRemove () {
 	proot-distro remove "$NAME"
 
 	rm --force "$SCRIPT"
+	rm --force $HOME/.local/share/applications/${NAME}-*.desktop
 }
 
 # Helper function that updates the guest's timezone.
@@ -207,25 +236,26 @@ unNerfProotDistro () {
 # Flow control.
 #
 case "$1" in
-	"app")
-		launchApp
-		;;
-	"shell")
-		startCLI
-		;;
-	"update")
+	"--update"|"-u")
 		updateEngagement
 		;;
-	"backup")
+	"--backup"|"-b")
 		backupEngagement
 		;;
-	"restore")
+	"--restore"|"-r")
 		restoreEngagement
 		;;
-	"archive")
+	"--archive"|"-a")
 		archiveEngagement
 		;;
-	*)
+	"--help"|"-h")
 		scriptHelp
+		;;
+	*)
+		if [[ -z "$1" ]]; then
+			startCLI
+		else
+			launchApp "$@"
+		fi
 		;;
 esac

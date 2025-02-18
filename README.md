@@ -75,7 +75,7 @@ pkg install pulseaudio termux-am termux-x11-nightly virglrenderer-android xfce4 
 
 mkdir $HOME/bin
 
-cat > $HOME/bin/start-desktop.sh << EOF
+cat > $HOME/bin/start-desktop << EOF
 #!$(which bash)
 
 export USERNAME=\$(whoami)
@@ -147,7 +147,7 @@ rm --recursive --force \$PREFIX/tmp/.X11-unix
 unset USER USERNAME
 EOF
 
-chmod +x $HOME/bin/start-desktop.sh
+chmod +x $HOME/bin/start-desktop
 echo '$PATH:$HOME/bin' >> $HOME/.bashrc
 
 # Enable access to device storage.
@@ -163,6 +163,7 @@ To create a new engagement (container, control script, and data directory), just
 At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
 
 ### Linux and macOS
+- `$CONTROL_SCRIPT help`: Display help message.
 - `$CONTROL_SCRIPT start`: Start the engagement's container.
 - `$CONTROL_SCRIPT stop`: Stop the engagement's container.
 - `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
@@ -171,15 +172,16 @@ At the end of the process, the control script name will be provided and the scri
 - `$CONTROL_SCRIPT backup`: Backup the engagement container in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
 - `$CONTROL_SCRIPT restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
 - `$CONTROL_SCRIPT archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
-- `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
 
 **Note:** On macOS, the first time you start an environment's desktop, you will be asked to grant either the Terminal app or `env` "Accessibility Access". You will need to do this in the System Settings app and then re-connect. On the next run, you will be asked to grant access to the "System Events" app. You should not be asked for these permissions again, or for subsequent engagements.
 
 ### Android
-- `$CONTROL_SCRIPT app $COMMAND $ARGS`: Launch `$COMMAND` with `$ARGS` within the the engagement environment.
-- `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement environment.
-- `$CONTROL_SCRIPT update`: Update the engagement environment's packages. Useful during long-running engagements.
-- `$CONTROL_SCRIPT backup`: Backup the engagement environment in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
-- `$CONTROL_SCRIPT restore`: Replaces the current engagement environment from the most recent backup in `$ENGAGEMENT_DIR/Backups/`.
-- `$CONTROL_SCRIPT archive`: Backup the engagement environment, delete it, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
-- `$CONTROL_SCRIPT delete`: Permenantly delete all engagement data.
+- `$CONTROL_SCRIPT --help`: Display help message.
+- `$CONTROL_SCRIPT --update`: Update the engagement environment's packages. Useful during long-running engagements.
+- `$CONTROL_SCRIPT --backup`: Backup the engagement environment in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
+- `$CONTROL_SCRIPT --restore`: Replaces the current engagement environment from the most recent backup in `$ENGAGEMENT_DIR/Backups/`.
+- `$CONTROL_SCRIPT --archive`: Backup the engagement environment, delete it, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
+
+If the `$CONTROL_SCRIPT` is called without any options, then the remainder of the command line is treated as a command (perhaps with its own options) to run in the engagement environment (*i.e.*, `$CONTROL_SCRIPT ls -la`).
+
+If `$CONTROL_SCRIPT` is called without any options *or* commands, then a tmux shell is opened in the engagement environment.

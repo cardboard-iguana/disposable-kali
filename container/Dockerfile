@@ -99,7 +99,7 @@ EOF
 # Create (and run) system update cleanup script
 #
 RUN <<EOF
-cat > /usr/local/sbin/system-update-cleanup.sh << SCRIPT
+cat > /usr/local/sbin/system-update-cleanup << SCRIPT
 #!/usr/bin/env bash
 
 # Fix VS Code files
@@ -119,7 +119,7 @@ sed -i 's/^FuseMountName=thinclient_drives\$/FuseMountName=.thinclient-drives/' 
 sed -i 's/^#EnableFuseMount=false\$/EnableFuseMount=false/'                     /etc/xrdp/sesman.ini
 SCRIPT
 if [ "$HOST_OS" = "Darwin" ]; then
-	cat >> /usr/local/sbin/system-update-cleanup.sh <<- SCRIPT
+	cat >> /usr/local/sbin/system-update-cleanup <<- SCRIPT
 
 	# Fix scroll on macOS
 	#
@@ -129,15 +129,15 @@ if [ "$HOST_OS" = "Darwin" ]; then
 	SCRIPT
 fi
 
-chmod 755 /usr/local/sbin/system-update-cleanup.sh
+chmod 755 /usr/local/sbin/system-update-cleanup
 
-/usr/local/sbin/system-update-cleanup.sh
+/usr/local/sbin/system-update-cleanup
 EOF
 
 # Create update script (useful for long-running containiners)
 #
 RUN <<EOF
-cat > /usr/local/bin/update.sh << SCRIPT
+cat > /usr/local/bin/update << SCRIPT
 #!/usr/bin/env bash
 
 sudo cp /usr/bin/systemctl.bin /usr/bin/systemctl
@@ -150,18 +150,18 @@ sudo apt clean
 sudo cp /usr/bin/systemctl    /usr/bin/systemctl.bin
 sudo cp /usr/bin/systemctl.sh /usr/bin/systemctl
 
-sudo /usr/local/sbin/system-update-cleanup.sh
+sudo /usr/local/sbin/system-update-cleanup
 
 mise upgrade
 SCRIPT
 
-chmod 755 /usr/local/bin/update.sh
+chmod 755 /usr/local/bin/update
 EOF
 
 # Enforce user-level customizations
 #
 RUN <<EOF
-cat > /usr/local/bin/user-settings.sh << SCRIPT
+cat > /usr/local/bin/user-settings << SCRIPT
 #!/usr/bin/env bash
 
 # Make sure that XFCE's background is set consistently to match XRDP
@@ -184,7 +184,7 @@ xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitorrdp0/wo
 # Set theme
 #
 gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
-gsettings set org.gnome.desktop.interface        gtk-theme    Kali-Light
+gsettings set org.gnome.desktop.interface        gtk-theme    Windows-10
 gsettings set org.gnome.desktop.interface        icon-theme   Windows-10-Icons
 
 xfconf-query --channel xfce4-notifyd --property /theme                                 --create --type string --set Retro
@@ -203,7 +203,7 @@ xfconf-query --channel xfce4-panel   --property /plugins/plugin-2200/items      
                                                                                                 --type string --set "+logout"
 xfconf-query --channel xfwm4         --property /general/theme                         --create --type string --set Kali-Light
 xfconf-query --channel xsettings     --property /Net/IconThemeName                     --create --type string --set Windows-10-Icons
-xfconf-query --channel xsettings     --property /Net/ThemeName                         --create --type string --set Kali-Light
+xfconf-query --channel xsettings     --property /Net/ThemeName                         --create --type string --set Windows-10
 
 # Disable session saving
 #
@@ -217,13 +217,13 @@ xfconf-query --channel xfce4-screensaver --property /lock/enabled  --create --ty
 xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
 SCRIPT
 
-chmod 755 /usr/local/bin/user-settings.sh
+chmod 755 /usr/local/bin/user-settings
 EOF
 
 # Create container startup script
 #
 RUN <<EOF
-cat > /usr/local/sbin/init.sh << SCRIPT
+cat > /usr/local/sbin/init << SCRIPT
 #!/usr/bin/env bash
 
 if [[ -f /etc/localtime.host ]]; then
@@ -241,7 +241,7 @@ chown --recursive "$USER_NAME":"$USER_NAME" /home/"$USER_NAME"
 /usr/bin/bash
 SCRIPT
 
-chmod 755 /usr/local/sbin/init.sh
+chmod 755 /usr/local/sbin/init
 EOF
 
 # Generate local self-signed certificate (for PostgreSQL)
@@ -338,7 +338,7 @@ cat > /home/"$USER_NAME"/.config/autostart/user-settings.desktop << AUTOSTART
 [Desktop Entry]
 Type=Application
 Name=Configure user settings
-Exec=/usr/local/bin/user-settings.sh
+Exec=/usr/local/bin/user-settings
 StartupNotify=false
 Terminal=false
 Hidden=false
@@ -376,14 +376,14 @@ mkdir --parents /home/"$USER_NAME"/.config/gtk-3.0
 cat > /home/"$USER_NAME"/.config/gtk-3.0/settings.ini << INI
 [Settings]
 gtk-icon-theme-name = Windows-10-Icons
-gtk-theme-name = Kali-Light
+gtk-theme-name = Windows-10
 INI
 
 mkdir --parents /home/"$USER_NAME"/.config/qt5ct
-sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' /etc/xdg/qt5ct/qt5ct.conf > /home/"$USER_NAME"/.config/qt5ct/qt5ct.conf
+sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt5ct/qt5ct.conf > /home/"$USER_NAME"/.config/qt5ct/qt5ct.conf
 
 mkdir --parents /home/"$USER_NAME"/.config/qt6ct
-sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt6ct/colors/Kali-Light.conf#' /etc/xdg/qt6ct/qt6ct.conf > /home/"$USER_NAME"/.config/qt6ct/qt6ct.conf
+sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' /etc/xdg/qt6ct/qt6ct.conf > /home/"$USER_NAME"/.config/qt6ct/qt6ct.conf
 
 mkdir --parents /home/"$USER_NAME"/.config/qterminal.org
 sed -i 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/;s/^ApplicationTransparency=.\+/ApplicationTransparency=0/' /etc/xdg/qterminal.org/qterminal.ini > /home/"$USER_NAME"/.config/qterminal.org/qterminal.ini
@@ -392,7 +392,7 @@ ln --symbolic --force /home/"$USER_NAME"/.face /home/"$USER_NAME"/.face.icon
 
 cat > /home/"$USER_NAME"/.gtkrc-2.0 << INI
 gtk-icon-theme-name = "Windows-10-Icons"
-gtk-theme-name = "Kali-Light"
+gtk-theme-name = "Windows-10"
 INI
 
 touch /home/"$USER_NAME"/.hushlogin
@@ -450,4 +450,4 @@ EOF
 #
 EXPOSE 3389
 ENTRYPOINT ["/usr/bin/bash"]
-CMD ["/usr/local/sbin/init.sh"]
+CMD ["/usr/local/sbin/init"]

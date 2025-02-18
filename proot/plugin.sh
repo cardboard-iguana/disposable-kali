@@ -17,15 +17,15 @@ distro_setup() {
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt full-upgrade --quiet --assume-yes --fix-broken
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt install --quiet --assume-yes \
-		at-spi2-core \
-		bc \
 		build-essential \
 		burpsuite \
 		code-oss \
 		dialog \
-		fonts-noto \
+		firefox-esr \
 		fonts-recommended \
-		kali-desktop-xfce \
+		gnupg \
+		kali-menu \
+		kali-themes \
 		kali-undercover \
 		less \
 		libffi-dev \
@@ -33,13 +33,11 @@ distro_setup() {
 		metasploit-framework \
 		nano \
 		openssh-client \
-		pm-utils \
+		qt5ct \
+		qt6ct \
 		tmux \
-		tumbler \
 		uuid-runtime \
 		xclip \
-		xfce4-notifyd \
-		xorg \
 		zlib1g-dev
 
 	run_proot_cmd env DEBIAN_FRONTEND=noninteractive apt autoremove --quiet --assume-yes --purge --autoremove
@@ -84,7 +82,7 @@ distro_setup() {
 
 	# Create (and run) system update cleanup script.
 	#
-	cat > ./usr/local/sbin/system-update-cleanup.sh <<- EOF
+	cat > ./usr/local/sbin/system-update-cleanup <<- EOF
 	#!/usr/bin/env bash
 
 	# Fix bad permissions on /usr/bin/sudo
@@ -102,38 +100,15 @@ distro_setup() {
 	# PostgreSQL upgrade hack
 	#
 	sed -i 's/^stop_version/#stop_version/' /var/lib/dpkg/info/postgresql-??.prerm
-
-	# FIXME: Unfortunately, setting the XFCE desktop backdrop is broken as
-	# of 2025-01-02 for outputs whose names contain spaces. This causes
-	# xfdesktop to always load /usr/share/backgrounds/xfce/xfce-x.svg as the
-	# backdrop, rather than applying the solid color set above. As a stupid
-	# work-around, we overwrite the default backdrop with one that is the
-	# desired solid color.
-	#
-	cat > /usr/share/backgrounds/xfce/xfce-x.svg << SVG
-	<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-	<svg width="3840"
-	     height="2160"
-	     viewBox="0 0 3840 2160"
-	     version="1.1"
-	     style="background-color: #19315a;"
-	     xmlns="http://www.w3.org/2000/svg">
-	<rect style="fill: #19315a; fill-opacity: 1;"
-	      width="3840"
-	      height="2160"
-	      x="0"
-	      y="0" />
-	</svg>
-	SVG
 	EOF
 
-	chmod 755 ./usr/local/sbin/system-update-cleanup.sh
+	chmod 755 ./usr/local/sbin/system-update-cleanup
 
-	run_proot_cmd /usr/local/sbin/system-update-cleanup.sh
+	run_proot_cmd /usr/local/sbin/system-update-cleanup
 
 	# Create update script (useful for long-running environments)
 	#
-	cat > ./usr/local/bin/update.sh <<- EOF
+	cat > ./usr/local/bin/update <<- EOF
 	#!/usr/bin/env bash
 
 	sudo -u postgres /etc/init.d/postgresql stop
@@ -150,74 +125,12 @@ distro_setup() {
 
 	sudo -u postgres /etc/init.d/postgresql start
 
-	sudo /usr/local/sbin/system-update-cleanup.sh
+	sudo /usr/local/sbin/system-update-cleanup
 
 	mise upgrade
 	EOF
 
-	chmod 755 ./usr/local/bin/update.sh
-
-	# Enforce user-level customizations
-	#
-	cat > ./usr/local/bin/user-settings.sh <<- EOF
-	#!/usr/bin/env bash
-
-	# Make sure that XFCE's background is set to a solid color
-	#
-	XRDP_BG_COLOR=19315A
-
-	RED="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:0:2} / FF" | bc)"
-	GREEN="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:2:2} / FF" | bc)"
-	BLUE="\$(echo "ibase=16 ; scale=24; \${XRDP_BG_COLOR:4:2} / FF" | bc)"
-
-	MONITOR="\$(xrandr --current | grep connected | sed 's/connected.*//;s/ //g')"
-
-	xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-mode                            --create --type bool   --set true
-	xfconf-query --channel xfce4-desktop --property /backdrop/single-workspace-number                          --create --type int    --set 0
-	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/image-style --create --type int    --set 0
-	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/color-style --create --type int    --set 0
-	xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor\${MONITOR}/workspace0/rgba1       --create --type double --set \$RED \\
-	                                                                                                                    --type double --set \$GREEN \\
-	                                                                                                                    --type double --set \$BLUE \\
-	                                                                                                                    --type double --set 1
-
-	# Set theme
-	#
-	gsettings set org.xfce.mousepad.preferences.view color-scheme Kali-Light
-	gsettings set org.gnome.desktop.interface        gtk-theme    Kali-Light
-	gsettings set org.gnome.desktop.interface        icon-theme   Windows-10-Icons
-
-	xfconf-query --channel xfce4-notifyd --property /theme                                 --create --type string --set Retro
-	xfconf-query --channel xfce4-notifyd --property /notify-location                       --create --type string --set bottom-right
-	xfconf-query --channel xfce4-panel   --property /panels/dark-mode                      --create --type bool   --set true
-	xfconf-query --channel xfce4-panel   --property /panels/panel-1/icon-size              --create --type uint   --set 24
-	xfconf-query --channel xfce4-panel   --property /panels/panel-1/position               --create --type string --set "p=8;x=0;y=0"
-	xfconf-query --channel xfce4-panel   --property /panels/panel-1/size                   --create --type uint   --set 44
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-11/show-labels         --create --type bool   --set true
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-11/grouping            --create --type bool   --set false
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-19/digital-time-format --create --type string --set "%Y-%m-%d @ %H:%M:%S %Z"
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-19/digital-time-font   --create --type string --set "Noto Mono 11"
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-22/items               --create --type string --set "-lock-screen" \\
-	                                                                                                --type string --set "+logout"
-	xfconf-query --channel xfce4-panel   --property /plugins/plugin-2200/items             --create --type string --set "-lock-screen" \\
-	                                                                                                --type string --set "+logout"
-	xfconf-query --channel xfwm4         --property /general/theme                         --create --type string --set Kali-Light
-	xfconf-query --channel xsettings     --property /Net/IconThemeName                     --create --type string --set Windows-10-Icons
-	xfconf-query --channel xsettings     --property /Net/ThemeName                         --create --type string --set Kali-Light
-
-	# Disable session saving
-	#
-	xfconf-query --channel xfce4-session --property /general/AutoSave    --create --type bool --set false
-	xfconf-query --channel xfce4-session --property /general/SaveOnExit  --create --type bool --set false
-	xfconf-query --channel xfce4-session --property /general/SessionName --create --type string --set Default
-
-	# Disable screensaver
-	#
-	xfconf-query --channel xfce4-screensaver --property /lock/enabled  --create --type bool --set false
-	xfconf-query --channel xfce4-screensaver --property /saver/enabled --create --type bool --set false
-	EOF
-
-	chmod 755 ./usr/local/bin/user-settings.sh
+	chmod 755 ./usr/local/bin/update
 
 	# Abuse the command-not-found functionality to add a date/time
 	# stamp before each prompt
@@ -239,9 +152,9 @@ distro_setup() {
 	}
 	EOF
 
-	# Create startup scripts
+	# Create shell startup script
 	#
-	cat > ./usr/local/sbin/tui.sh <<- EOF
+	cat > ./usr/local/sbin/tui <<- EOF
 	#!/usr/bin/env bash
 
 	sudo -u postgres /etc/init.d/postgresql start
@@ -251,19 +164,7 @@ distro_setup() {
 	sudo -u postgres /etc/init.d/postgresql stop
 	EOF
 
-	chmod 755 ./usr/local/sbin/tui.sh
-
-	cat > ./usr/local/sbin/gui.sh <<- EOF
-	#!/usr/bin/env bash
-
-	sudo -u postgres /etc/init.d/postgresql start
-
-	dbus-launch --exit-with-session startxfce4
-
-	sudo -u postgres /etc/init.d/postgresql stop
-	EOF
-
-	chmod 755 ./usr/local/sbin/gui.sh
+	chmod 755 ./usr/local/sbin/tui
 
 	# Generate local self-signed certificate (for PostgreSQL)
 	#
@@ -272,7 +173,7 @@ distro_setup() {
 
 	# User setup.
 	#
-	run_proot_cmd usermod --append --groups adm,audio,cdrom,dialout,dip,floppy,kali-trusted,netdev,plugdev,sudo,staff,users,video kali
+	run_proot_cmd usermod --append --groups adm,audio,cdrom,dialout,dip,floppy,netdev,plugdev,sudo,staff,users,video kali
 
 	echo "kali ALL=(ALL:ALL) NOPASSWD: ALL" > ./etc/sudoers.d/kali
 
@@ -306,48 +207,6 @@ distro_setup() {
 	}
 	EOF
 
-	mkdir --parents ./home/kali/.config/autostart
-
-	cat > ./home/kali/.config/autostart/nm-applet.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable NetworkManager applet
-	Exec=/usr/bin/true
-	StartupNotify=false
-	Terminal=false
-	Hidden=true
-	EOF
-
-	cat > ./home/kali/.config/autostart/user-settings.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Configure user settings
-	Exec=/usr/local/bin/user-settings.sh
-	StartupNotify=false
-	Terminal=false
-	Hidden=false
-	EOF
-
-	cat > ./home/kali/.config/autostart/xfce4-power-manager.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable Xfce power management applet
-	Exec=/usr/bin/true
-	StartupNotify=false
-	Terminal=false
-	Hidden=true
-	EOF
-
-	cat > ./home/kali/.config/autostart/xscreensaver.desktop <<- EOF
-	[Desktop Entry]
-	Type=Application
-	Name=Disable X screen saver
-	Exec=/usr/bin/true
-	StartupNotify=false
-	Terminal=false
-	Hidden=true
-	EOF
-
 	mkdir --parents ./home/kali/.config/"Code - OSS"/User
 	cat > ./home/kali/.config/"Code - OSS"/User/settings.json <<- EOF
 	{
@@ -360,23 +219,20 @@ distro_setup() {
 	cat > ./home/kali/.config/gtk-3.0/settings.ini <<- EOF
 	[Settings]
 	gtk-icon-theme-name = Windows-10-Icons
-	gtk-theme-name = Kali-Light
+	gtk-theme-name = Windows-10
 	EOF
 
 	mkdir --parents ./home/kali/.config/qt5ct
-	sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Kali-Light.conf#' ./etc/xdg/qt5ct/qt5ct.conf > ./home/kali/.config/qt5ct/qt5ct.conf
+	sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' ./etc/xdg/qt5ct/qt5ct.conf > ./home/kali/.config/qt5ct/qt5ct.conf
 
 	mkdir --parents ./home/kali/.config/qt6ct
-	sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt6ct/colors/Kali-Light.conf#' ./etc/xdg/qt6ct/qt6ct.conf > ./home/kali/.config/qt6ct/qt6ct.conf
-
-	mkdir --parents ./home/kali/.config/qterminal.org
-	sed 's/^colorScheme=Kali-Dark/colorScheme=Kali-Light/;s/^ApplicationTransparency=.\+/ApplicationTransparency=0/' ./etc/xdg/qterminal.org/qterminal.ini > ./home/kali/.config/qterminal.org/qterminal.ini
+	sed 's#^icon_theme=.\+#icon_theme=Windows-10-Icons#;s#^color_scheme_path=.\+#color_scheme_path=/usr/share/qt5ct/colors/Windows.conf#' ./etc/xdg/qt6ct/qt6ct.conf > ./home/kali/.config/qt6ct/qt6ct.conf
 
 	ln --symbolic --force .face ./home/kali/.face.icon
 
 	cat > ./home/kali/.gtkrc-2.0 <<- EOF
 	gtk-icon-theme-name = "Windows-10-Icons"
-	gtk-theme-name = "Kali-Light"
+	gtk-theme-name = "Windows-10"
 	EOF
 
 	touch ./home/kali/.hushlogin

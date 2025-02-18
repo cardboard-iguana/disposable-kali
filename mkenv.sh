@@ -95,10 +95,10 @@ fi
 # Determine build variables.
 #
 if [[ "$CODE_PATH" == "podman" ]]; then
-	SCRIPT="$HOME/.local/bin/${NAME}.sh"
+	SCRIPT="$HOME/.local/bin/${NAME}"
 	ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 elif [[ "$CODE_PATH" == "proot" ]]; then
-	SCRIPT="$HOME/bin/${NAME}.sh"
+	SCRIPT="$HOME/bin/${NAME}"
 	ENGAGEMENT_DIR="$HOME/storage/shared/Documents/Engagements/$NAME"
 else
 	echo "You should not be here."
@@ -270,6 +270,7 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	sed "s|{{distro-name}}|$NAME|;s|{{build-date}}|$BUILD_DATE|;s|{{tarball-sha256}}|$TARBALL_SHA256|" proot/plugin.sh > "$PREFIX/etc/proot-distro/${NAME}.override.sh"
 
 	proot-distro install "$NAME"
+	proot-distro clear-cache
 
 	# For some reason, setting up PostgreSQL/Metasploit works when
 	# called from proot-distro, but does not work when called using the
@@ -282,8 +283,22 @@ elif [[ "$CODE_PATH" == "proot" ]]; then
 	#
 	proot-distro login "$NAME" --no-arch-warning -- bash -c "su postgres --command=\"pg_createcluster 17 main\" && su postgres --command=\"/etc/init.d/postgresql start\" && msfdb init && su postgres --command=\"/etc/init.d/postgresql stop\""
 
+	# Set user password.
+	#
 	proot-distro login "$NAME" --no-arch-warning -- bash -c "echo \"kali:\$(uuidgen --random)\" | chpasswd"
 
+	# Create dedicated desktop launchers.
+	#
+	mkdir --parents "$HOME/.local/share/applications"
+	cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/code-oss.desktop" | \
+		sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-code-oss.desktop"
+	cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/firefox-esr.desktop" | \
+		sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-firefox-esr.desktop"
+	cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/kali-burpsuite.desktop" | \
+		sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-burp-suite.desktop"
+
+	# Setup control script.
+	#
 	sed "s/{{environment-name}}/$NAME/" proot/envctl.sh > "$SCRIPT"
 
 else
@@ -300,5 +315,12 @@ echo "$SCRIPT."
 echo ""
 echo "------------------------------------------------------------------------"
 echo ""
-$SCRIPT help
+if [[ "$CODE_PATH" == "podman" ]]; then
+	"$SCRIPT" help
+elif [[ "$CODE_PATH" == "proot" ]]; then
+	"$SCRIPT" --help
+else
+	echo "You should not be here."
+	exit 2
+fi
 echo ""

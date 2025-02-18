@@ -9,7 +9,7 @@ WAIT=12
 
 # Core engagement files/data.
 #
-SCRIPT="$HOME/.local/bin/${NAME}.sh"
+SCRIPT="$HOME/.local/bin/${NAME}"
 ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 
 # Flow control.
@@ -52,10 +52,12 @@ if [[ "$CONTROL_FUNCTION" == "scriptHelp" ]]; then
 	echo "Interact with the $NAME engagement environment."
 	echo ""
 	echo "Available commands:"
-	echo "  start    Start the engagement's container"
-	echo "  stop     Stop the engagement's container"
-	echo "  shell    Connect to a shell in the engagement's container"
-	echo "  desktop  Connect to a desktop in the engagement's container"
+	echo "  help     Display this help message"
+	echo "  start    Start engagement"
+	echo "  stop     Stop engagement"
+	echo "  shell    Connect to a shell in the engagement"
+	echo "  desktop  Connect to a desktop in the engagement"
+	echo "  update   Update the packages installed in the engagement"
 	echo "  backup   Commit changes to the underlying image and back it up"
 	echo "  restore  Restore an image/container pair from the most recent backup"
 	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
@@ -338,7 +340,7 @@ startGUI () {
 updateEngagement () {
 	startEngagement
 
-	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/local/bin/update.sh
+	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/local/bin/update
 }
 
 # Archive container and control script in ENGAGEMENT_DIR.
