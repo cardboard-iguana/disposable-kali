@@ -14,35 +14,36 @@ ENGAGEMENT_DIR="$HOME/Engagements/$NAME"
 
 # Flow control.
 #
-case "$1" in
-	"start")
-		CONTROL_FUNCTION="startEngagement"
-		;;
-	"stop")
-		CONTROL_FUNCTION="stopEngagement"
-		;;
-	"shell")
-		CONTROL_FUNCTION="startCLI"
-		;;
-	"desktop")
-		CONTROL_FUNCTION="startGUI"
-		;;
-	"update")
-		CONTROL_FUNCTION="updateEngagement"
-		;;
-	"backup")
-		CONTROL_FUNCTION="backupEngagement"
-		;;
-	"restore")
-		CONTROL_FUNCTION="restoreEngagement"
-		;;
-	"archive")
-		CONTROL_FUNCTION="archiveEngagement"
-		;;
-	*)
-		CONTROL_FUNCTION="scriptHelp"
-		;;
-esac
+if [[ $# -eq 0 ]]; then
+	CONTROL_FUNCTION="startCLI"
+else
+	case "$1" in
+		"--start")
+			CONTROL_FUNCTION="startEngagement"
+			;;
+		"--stop")
+			CONTROL_FUNCTION="stopEngagement"
+			;;
+		"--desktop"|"-d")
+			CONTROL_FUNCTION="startGUI"
+			;;
+		"--update"|"-u")
+			CONTROL_FUNCTION="updateEngagement"
+			;;
+		"--backup"|"-b")
+			CONTROL_FUNCTION="backupEngagement"
+			;;
+		"--restore"|"-r")
+			CONTROL_FUNCTION="restoreEngagement"
+			;;
+		"--archive"|"-a")
+			CONTROL_FUNCTION="archiveEngagement"
+			;;
+		*)
+			CONTROL_FUNCTION="scriptHelp"
+			;;
+	esac
+fi
 
 # Print help and exit.
 #
@@ -52,15 +53,17 @@ if [[ "$CONTROL_FUNCTION" == "scriptHelp" ]]; then
 	echo "Interact with the $NAME engagement environment."
 	echo ""
 	echo "Available commands:"
-	echo "  help     Display this help message"
-	echo "  start    Start engagement"
-	echo "  stop     Stop engagement"
-	echo "  shell    Connect to a shell in the engagement"
-	echo "  desktop  Connect to a desktop in the engagement"
-	echo "  update   Update the packages installed in the engagement"
-	echo "  backup   Commit changes to the underlying image and back it up"
-	echo "  restore  Restore an image/container pair from the most recent backup"
-	echo "  archive  Archive the engagement to $ENGAGEMENT_DIR"
+	echo "  --help,    -h  Display this help message"
+	echo "  --start        Start engagement"
+	echo "  --stop         Stop engagement"
+	echo "  --desktop, -d  Connect to a desktop in the engagement"
+	echo "  --update,  -u  Update the packages installed in the engagement"
+	echo "  --backup,  -b  Commit changes to the underlying image and back it up"
+	echo "  --restore, -r  Restore an image/container pair from the most recent backup"
+	echo "  --archive, -a  Archive the engagement to $ENGAGEMENT_DIR"
+	echo ""
+	echo "If no option is provided, a tmux shell will be opened in the engagement"
+	echo "environment."
 
 	exit
 fi
@@ -271,7 +274,7 @@ stopEngagement () {
 startCLI () {
 	startEngagement
 
-	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/bash
+	"$PODMAN" exec --tty --interactive --user $USER --workdir /home/$USER "$NAME" /usr/bin/tmux -2 new-session
 }
 
 startGUI () {

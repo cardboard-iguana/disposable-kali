@@ -160,20 +160,21 @@ You will almost certainly want to enable Developer Mode and then set **Developer
 ## Usage
 To create a new engagement (container, control script, and data directory), just clone this repo and then run `bash mkenv.sh some-engagement-name` from inside of it.
 
-At the end of the process, the control script name will be provided and the script's `help` command will automatically run. Script commands are detailed below.
+At the end of the process, the control script name will be provided and the script's "help" command will automatically run. Script commands are detailed below.
 
 ### Linux and macOS
-- `$CONTROL_SCRIPT help`: Display help message.
-- `$CONTROL_SCRIPT start`: Start the engagement's container.
-- `$CONTROL_SCRIPT stop`: Stop the engagement's container.
-- `$CONTROL_SCRIPT shell`: Connect to a shell in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
-- `$CONTROL_SCRIPT desktop`: Connect to a desktop in the engagement's container. Automatically calls `$CONTROL_SCRIPT start` if necessary.
-- `$CONTROL_SCRIPT update`: Update the engagement container's packages. Useful during long-running engagements.
-- `$CONTROL_SCRIPT backup`: Backup the engagement container in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
-- `$CONTROL_SCRIPT restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
-- `$CONTROL_SCRIPT archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
+- `$CONTROL_SCRIPT --help`: Display help message.
+- `$CONTROL_SCRIPT --start`: Start the engagement's container.
+- `$CONTROL_SCRIPT --stop`: Stop the engagement's container.
+- `$CONTROL_SCRIPT --desktop`: Connect to a desktop in the engagement's container. Automatically calls `$CONTROL_SCRIPT --start` if necessary.
+- `$CONTROL_SCRIPT --update`: Update the engagement container's packages. Useful during long-running engagements.
+- `$CONTROL_SCRIPT --backup`: Backup the engagement container in the data directory. Useful for taking snapshots of the container before making a potentially destructive change during an engagement or porting a configured engagement to a different machine.
+- `$CONTROL_SCRIPT --restore`: Removes the current engagement container and image and regenerates it from the backup linked at `$ENGAGEMENT_DIR/Backups/${NAME}.tar`. By default this will be the most recent backup, but the symlink can be changed manually to point to any other backup.
+- `$CONTROL_SCRIPT --archive`: Backup the engagement container, delete it and the associated image, and archive the control script in the data directory. This is generally what you'll want to do at the end of the engagement.
 
 **Note:** On macOS, the first time you start an environment's desktop, you will be asked to grant either the Terminal app or `env` "Accessibility Access". You will need to do this in the System Settings app and then re-connect. On the next run, you will be asked to grant access to the "System Events" app. You should not be asked for these permissions again, or for subsequent engagements.
+
+If `$CONTROL_SCRIPT` is called without any options, then a tmux shell is opened in the engagement environment (`$CONTROL_SCRIPT --start` is called first, if necessary).
 
 ### Android
 - `$CONTROL_SCRIPT --help`: Display help message.
