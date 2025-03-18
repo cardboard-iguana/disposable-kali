@@ -33,6 +33,7 @@ distro_setup() {
 		metasploit-framework \
 		nano \
 		openssh-client \
+		python3-venv \
 		qt5ct \
 		qt6ct \
 		sqlite3 \

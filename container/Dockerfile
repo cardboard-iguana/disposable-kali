@@ -37,6 +37,7 @@ apt install --quiet --assume-yes \
     nano \
     openssh-client \
     openvpn \
+    python3-venv \
     sqlite3 \
     tmux \
     tumbler \
