@@ -35,6 +35,7 @@ distro_setup() {
 		openssh-client \
 		qt5ct \
 		qt6ct \
+		sqlite3 \
 		tmux \
 		uuid-runtime \
 		xclip \

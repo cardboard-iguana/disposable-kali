@@ -37,6 +37,7 @@ apt install --quiet --assume-yes \
     nano \
     openssh-client \
     openvpn \
+    sqlite3 \
     tmux \
     tumbler \
     uuid-runtime \
