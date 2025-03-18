@@ -35,6 +35,7 @@ apt install --quiet --assume-yes \
     libyaml-dev \
     metasploit-framework \
     nano \
+    netcat-openbsd \
     openssh-client \
     openvpn \
     python3-venv \

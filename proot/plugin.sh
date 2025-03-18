@@ -32,6 +32,7 @@ distro_setup() {
 		libyaml-dev \
 		metasploit-framework \
 		nano \
+		netcat-openbsd \
 		openssh-client \
 		python3-venv \
 		qt5ct \
