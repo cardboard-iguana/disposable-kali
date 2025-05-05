@@ -77,7 +77,27 @@ proot-distro login "$NAME" --no-arch-warning -- bash -c "echo \"kali:\$(uuidgen 
 # Create dedicated desktop launchers.
 #
 mkdir --parents "$HOME/.local/share/applications"
-cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/code-oss.desktop" | sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-code-oss.desktop"
+#cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/code-oss.desktop" | sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-code-oss.desktop"
+cat > "$HOME/.local/share/applications/${NAME}-code-oss.desktop" << EOF
+[Desktop Entry]
+Name=[$NAME] Code - OSS
+Comment=Code Editing. Redefined.
+GenericName=Text Editor
+Exec=$SCRIPT /usr/bin/code-oss --unity-launch %F
+Icon=code-oss
+Type=Application
+StartupNotify=false
+StartupWMClass=Code - OSS
+Categories=Security
+MimeType=application/x-code-oss-workspace;
+Actions=new-empty-window;
+Keywords=vscode;
+
+[Desktop Action new-empty-window]
+Name=[$NAME] New Empty Window
+Exec=$SCRIPT /usr/bin/code-oss --new-window %F
+Icon=code-oss
+EOF
 cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/firefox-esr.desktop" | sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-firefox-esr.desktop"
 cat "$PREFIX/var/lib/proot-distro/installed-rootfs/$NAME/usr/share/applications/kali-burpsuite.desktop" | sed "s#^Name=#Name=[$NAME] #;s#^Exec=#Exec=$SCRIPT #;s#^Categories=.*#Categories=Security#" > "$HOME/.local/share/applications/${NAME}-burp-suite.desktop"
 
